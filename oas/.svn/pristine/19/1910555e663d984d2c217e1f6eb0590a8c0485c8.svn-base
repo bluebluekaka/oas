@@ -1,0 +1,355 @@
+package com.oas.web.json;
+
+import java.net.URLDecoder;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.Config;
+import com.oas.common.DBCache;
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.common.Utils;
+import com.oas.objects.Customer;
+import com.oas.objects.Order;
+import com.oas.objects.Query;
+import com.oas.objects.Transfer;
+import com.oas.util.StringUtil;
+
+public class TransferJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private Query query;
+	
+	private Transfer transfer;
+	
+	private Customer customer;
+	
+	private Order order;
+	
+	public Query getQuery() {
+		return query;
+	}
+	
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public Transfer getTransfer() {
+		return transfer;
+	}
+	
+	public void setTransfer(Transfer transfer) {
+		this.transfer = transfer;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
+	}
+
+	public Order getOrder() {
+		return order;
+	}
+
+	public void setOrder(Order order) {
+		this.order = order;
+	}
+
+	public String execute() throws Exception {
+		try {
+			if (action != null) {
+//				String usertype = (String) getSession().getAttribute(Config.USER_TYPE);
+				String userid = (String) getSession().getAttribute(Config.USER_ID);
+				String workno = (String) getSession().getAttribute(Config.USER_WORKNO);
+				skip = SUCCESS;
+				if ("add".equals(action)) {
+					System.out.println("add");
+					transfer.setTransferId(DBCache.getSequence());
+					sql = "insert into customer_transfer" +
+							"(transfer_id,customer_id,transfer_account" +
+							",transfer_amount,remark,creater" +
+							",create_time,create_timei) values("
+							+ transfer.getTransferId()
+							+ ",'"
+							+ transfer.getCustomerId()
+							+ "','"
+							+ transfer.getTransferAccount()
+							+ "',"
+							+ transfer.getTransferAmount()
+							+ ",'"
+							+ transfer.getRemark()
+							+ "','"
+							+ workno
+							+ "',"
+							+"'"+Utils.getNowTimestamp()+ "',"+Utils.getSystemMillis()+")";
+					executeUpdate(sql);
+					String[] orderCodes = transfer.getOrderCodes().split(",");
+					addRela(transfer.getTransferId(), orderCodes);
+				} else if ("delete".equals(action)) {
+					sql = "delete from customer_transfer where transfer_id = " + transfer.getTransferId() + "";
+					executeUpdate(sql);
+					deleteRela(transfer.getTransferId());
+				} else if ("change".equals(action)) {
+					sql = "update customer_transfer set transfer_account='" + transfer.getTransferAccount() + "'"
+							+ ",transfer_amount="
+							+ transfer.getTransferAmount() + ",remark='"
+							+ transfer.getRemark() +"',last_user='"
+							+ workno +"',last_operate_time='"
+							+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+							+ Utils.getSystemMillis()
+							+ " where transfer_id = "+transfer.getTransferId();
+					executeUpdate(sql);
+					sql = "delete from transfer_financial_order_rela where transfer_id = " + transfer.getTransferId() + "";
+					executeUpdate(sql);
+					String[] orderCodes = transfer.getOrderCodes().split(",");
+					addRela(transfer.getTransferId(), orderCodes);
+				} else if ("display".equals(action)) {
+					sql = "SELECT ct.transfer_id,ct.customer_id,ct.transfer_account" +
+							",ct.transfer_amount,ct.remark,ct.transfer_state" +
+							",Group_concat(tfor.financial_order_code SEPARATOR ',') orderCodes" +
+							",c.company,c.name,c.phone,c.QQ,c.residualValue" +
+							" FROM customer_transfer ct" +
+							" LEFT JOIN transfer_financial_order_rela tfor on ct.transfer_id = tfor.transfer_id" +
+							" LEFT JOIN customer c on ct.customer_id = c.customerID" +
+							" where 1=1" +
+							" and ct.transfer_id = "+ transfer.getTransferId() + "";
+					executeQuery(sql);
+					if (rs.next()) {
+						transfer.setTransferId(rs.getLong("transfer_id"));
+						transfer.setCustomerId(rs.getString("customer_id"));
+						transfer.setTransferAccount(rs.getString("transfer_account"));
+						transfer.setTransferAmount(rs.getFloat("transfer_amount"));
+						transfer.setRemark(rs.getString("remark"));
+						transfer.setTransferState(rs.getInt("transfer_state"));
+						transfer.setOrderCodes(rs.getString("orderCodes"));
+						Customer c = new Customer();
+						c.setCompany(rs.getString("company"));
+						c.setName(rs.getString("name"));
+						c.setQq(rs.getString("QQ"));
+						c.setPhone(rs.getString("phone"));
+						c.setResidualValue(rs.getFloat("residualValue"));
+						this.customer = c;
+						skip = EDIT;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + transfer.getTransferId() + " not exists");
+					}
+					sql = "SELECT sum(o.recmoney) as recmoney" +
+					" FROM financial_order fo" +
+					" inner join orderinfo o on fo.order_code = o.orderid" +
+					" where 1=1" +
+					" and fo.financial_order_code in ("+ transfer.getOrderCodes() +")";
+					executeQuery(sql);
+					if (rs.next()) {
+						transfer.setRecmoneys(rs.getFloat("recmoney"));
+						skip = EDIT;
+					} else {
+						skip = ERROR;
+					}
+				} else if ("view".equals(action)) {
+					sql = "SELECT ct.transfer_id,ct.customer_id,ct.transfer_account" +
+					",ct.transfer_amount,ct.remark,ct.transfer_state" +
+					",Group_concat(tfor.financial_order_code SEPARATOR ',') orderCodes" +
+					",c.company,c.name,c.phone,c.QQ,c.residualValue" +
+					" from customer_transfer ct" +
+					" left join transfer_financial_order_rela tfor on ct.transfer_id = tfor.transfer_id" +
+					" left join customer c on ct.customer_id = c.customerID" +
+					" where 1=1" +
+					" and ct.transfer_id = "+ transfer.getTransferId() + "";
+					executeQuery(sql);
+					if (rs.next()) {
+						transfer.setTransferId(rs.getLong("transfer_id"));
+						transfer.setCustomerId(rs.getString("customer_id"));
+						transfer.setTransferAccount(rs.getString("transfer_account"));
+						transfer.setTransferAmount(rs.getFloat("transfer_amount"));
+						transfer.setRemark(rs.getString("remark"));
+						transfer.setTransferState(rs.getInt("transfer_state"));
+						transfer.setOrderCodes(rs.getString("orderCodes"));
+						Customer c = new Customer();
+						c.setCompany(rs.getString("company"));
+						c.setName(rs.getString("name"));
+						c.setQq(rs.getString("QQ"));
+						c.setPhone(rs.getString("phone"));
+						c.setResidualValue(rs.getFloat("residualValue"));
+						this.customer = c;
+						skip = VIEW;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + transfer.getTransferId() + " not exists");
+					}
+					sql = "SELECT sum(o.recmoney) as recmoney" +
+					" FROM financial_order fo" +
+					" inner join orderinfo o on fo.order_code = o.orderid" +
+					" where 1=1" +
+					" and fo.financial_order_code in ("+ transfer.getOrderCodes() +")";
+					executeQuery(sql);
+					if (rs.next()) {
+						transfer.setRecmoneys(rs.getFloat("recmoney"));
+						skip = VIEW;
+					} else {
+						skip = ERROR;
+					}
+				}else if ("audit".equals(action)) {
+					sql = "update customer_transfer set transfer_state=" + transfer.getTransferSubmitState() + ",last_user='"
+					+ workno +"',last_operate_time='"
+					+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+					+ Utils.getSystemMillis()+ "' "
+					+ " where transfer_id = "+transfer.getTransferId();
+					executeUpdate(sql);
+					if(transfer.getTransferSubmitState()==2){
+						float transferAmount = transfer.getTransferAmount();
+						sql = "select tfor.financial_order_code from transfer_financial_order_rela tfor where tfor.transfer_id = "+transfer.getTransferId()+" ";
+						executeQuery(sql);
+						if (rs.next()) {
+							Long code = rs.getLong("financial_order_code");
+							float amount = 0f;
+							float recmoney = 0f;
+							sql = "select fo.received_amount,oi.recmoney from financial_order fo inner join orderinfo oi ON fo.order_code = oi.orderid where fo.financial_order_code = "+code+" ";
+							executeQuery(sql);
+							if (rs.next()) {
+								amount = rs.getFloat("received_amount");
+								recmoney = rs.getFloat("recmoney");
+							}
+							if(transferAmount>=recmoney){
+								float rAmount = recmoney - amount;
+								sql = "update financial_order fo set fo.received_amount="+rAmount+",fo.received_state =1 where fo.financial_order_code = "+code+" ";
+								executeUpdate(sql);
+								transferAmount = transferAmount-rAmount;
+							}else {
+								sql = "update financial_order fo set fo.received_amount="+transferAmount+",fo.received_state =2 where fo.financial_order_code = "+code+" ";
+								executeUpdate(sql);
+								transferAmount = 0;
+							}
+						}
+						sql = "update customer c set c.residualValue=c.residualValue+("+transferAmount+") where c.customerID = "+transfer.getCustomerId()+" ";
+						executeUpdate(sql);
+					}
+					queryList();
+				}
+			} else {
+				queryList();
+			}
+		} catch (Exception e) {
+			skip = ERROR;
+			addActionError(e.toString());
+			e.printStackTrace();
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+	
+	public void queryList() throws Exception{
+		term = Helper.getQuerySqlNull(query, "ct.create_timei");
+
+		skip = JSON;
+		String sqlStr = "select ct.transfer_id,ct.customer_id,ct.transfer_account,ct.transfer_amount" +
+				",ct.remark,ct.transfer_state,ct.creater,ct.create_time,ct.last_user" +
+				",ct.last_operate_time,u1.name userName,u2.name luserName" +
+//				",case Group_concat(tfor.financial_order_code SEPARATOR ',') when '' then null else Group_concat(tfor.financial_order_code SEPARATOR ',') end  as orderCodes" +
+				" from customer_transfer ct" +
+				" left join transfer_financial_order_rela tfor on ct.transfer_id = tfor.transfer_id" +
+				" left join user u1 on ct.creater = u1.workcardno" +
+				" left join user u2 on ct.last_user = u2.workcardno" +
+				" where 1=1 " + term;
+		if(transfer!=null){
+			if(transfer.getTransferState()!=null&&transfer.getTransferState()!=99){
+				sqlStr += " and ct.transfer_state ='"+transfer.getTransferState()+"'";
+			}
+			if(!"".equals(transfer.getCustomerId())&&transfer.getCustomerId()!=null){
+				sqlStr += " and ct.customer_id ='"+transfer.getCustomerId()+"'";
+			}
+		}
+		
+		if(order!=null&&(order.getPnr()!=null||order.getOrderid()!=null)){
+			sqlStr += " and exists (select 1 from orderinfo o,transfer_financial_order_rela tfor,financial_order fo where 1=1 and o.orderid = fo.order_code and tfor.financial_order_code = fo.financial_order_code ";
+			if(!"".equals(order.getPnr())&&order.getPnr()!=null){
+				sqlStr += " and o.pnr ='"+order.getPnr()+"'";
+			}
+			if(!"".equals(order.getOrderid())&&order.getOrderid()!=null){
+				sqlStr += " and o.orderid ='"+order.getOrderid()+"'";
+			}
+			if(order.getType()!=99){
+				sqlStr += " and o.type ="+order.getType()+"";
+			}
+			sqlStr +=")";
+		}
+		if(customer!=null&&(customer.getCustomerID()!=null||customer.getName()!=null||customer.getPhone()!=null||customer.getQq()!=null)){
+			sqlStr += " and exists (select 1 from customer c where 1=1 and c.customerID = ct.customer_id ";
+			if(customer.getCustomerID()!=null&&!"".equals(customer.getCustomerID())){
+				sqlStr += " and c.customerID ='"+customer.getCustomerID()+"'";
+			}
+			if(customer.getName()!=null&&!"".equals(customer.getName())){
+				String name = URLDecoder.decode(customer.getName(),"UTF-8");
+				System.out.println(name);
+				sqlStr += " and c.name like '%"+name+"%'";
+			}
+			if(customer.getPhone()!=null&&!"".equals(customer.getPhone())){
+				sqlStr += " and c.phone like '"+customer.getPhone()+"%'";
+			}
+			if(customer.getQq()!=null&&!"".equals(customer.getQq())){
+				sqlStr += " and c.QQ like '"+customer.getQq()+"%'";
+			}
+			sqlStr +=")";
+		}
+		
+//		System.out.println(sqlStr);
+		executeQuery(sqlStr);
+		while (rs.next()) {
+			Long transferId = rs.getLong("transfer_id");
+			String customerId = rs.getString("customer_id");
+			Float transferAmount = rs.getFloat("transfer_amount");
+			amount += transferAmount;
+			String transferAccount = rs.getString("transfer_account");
+			String remark = rs.getString("remark");
+			int transferState = rs.getInt("transfer_state");
+			String orderCodes = "";
+//			String orderCodes = rs.getString("orderCodes");
+			String creater = StringUtil.toString(rs.getString("creater"));
+			String operator = StringUtil.toString(rs.getString("last_user"));
+			String userName = StringUtil.toString(rs.getString("userName"));
+			String luserName = StringUtil.toString(rs.getString("luserName"));
+			String createTime = StringUtil.toString(rs.getDate("create_time"))+" "+StringUtil.toString(rs.getTime("create_time"));
+			String updateTime = StringUtil.toString(rs.getDate("last_operate_time"))+" "+StringUtil.toString(rs.getTime("last_operate_time"));
+			if (count != 0)
+				bf.append(",");
+			bf.append("{'transferId':'" + transferId + "'")
+			  .append(",'customerId':'" + customerId + "'")
+			  .append(",'transferAmount':'" + transferAmount + "'")
+			  .append(",'transferAccount':'" + transferAccount + "'")
+			  .append(",'remark':'" + remark + "'")
+			  .append(",'orderCodes':'" + orderCodes + "'")
+			  .append(",'transferState':'" + transferState + "'")
+			  .append(",'luserName':'" + luserName + "'")
+			  .append(",'userName':'" + userName + "'")
+			  .append(",'creater':'" + creater + "'")
+			  .append(",'createTime':'" + createTime + "'")
+			  .append(",'operator':'" + operator + "'")
+			  .append(",'updateTime':'" + updateTime + "'}");
+			count++;
+		}
+		String counts = "总数：" + count+" ,总转账金额："+amount;
+		tojsonNew(counts);
+	}
+	
+	private void deleteRela(Long transferIds){
+		sql = "delete from transfer_financial_order_rela where transfer_id = " + transferIds + " ";
+		executeUpdate(sql);
+	}
+	
+	private void addRela(Long transferId,String[] orderCodes){
+		for(int i=0;i<orderCodes.length;i++){
+			sql = sql = "insert into transfer_financial_order_rela" +
+			"(transfer_id,financial_order_code) values("
+			+ transferId
+			+ ","
+			+ orderCodes[i]
+			+ ")";
+			executeUpdate(sql);
+		}
+	}
+}

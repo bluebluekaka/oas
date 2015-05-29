@@ -1,0 +1,236 @@
+package com.oas.web.json;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.Config;
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.common.Utils;
+import com.oas.objects.Customer;
+import com.oas.objects.Order;
+import com.oas.objects.OtherExpenses;
+import com.oas.objects.Query;
+import com.oas.util.StringUtil;
+
+public class OtherExpensesJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private Query query;
+	private OtherExpenses otherExpenses;
+	private Order order;
+
+	public Query getQuery() {
+		return query;
+	}
+
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public OtherExpenses getOtherExpenses() {
+		return otherExpenses;
+	}
+
+	public void setOtherExpenses(OtherExpenses otherExpenses) {
+		this.otherExpenses = otherExpenses;
+	}
+
+	public Order getOrder() {
+		return order;
+	}
+
+	public void setOrder(Order order) {
+		this.order = order;
+	}
+
+	public String execute() throws Exception {
+		try {
+			if (action != null) {
+//				String usertype = (String) getSession().getAttribute(Config.USER_TYPE);
+				String userid = (String) getSession().getAttribute(Config.USER_ID);
+				String workno = (String) getSession().getAttribute(Config.USER_WORKNO);
+				skip = SUCCESS;
+				if ("add".equals(action)) {
+					otherExpenses.setCreater(workno);
+					otherExpenses.setOtherExpensesState(0);
+					sql = "insert into other_expenses_rela_financial_order" +
+							"(financial_order_code,other_expenses_type,adjust_amount" +
+							",amount_explain,other_expenses_state,creater,create_time,create_timei) values("
+							+ otherExpenses.getFinancialOrderCode()
+							+ ","
+							+ otherExpenses.getOtherExpensesType()
+							+ ","
+							+ otherExpenses.getAdjustAmount()
+							+ ",'"
+							+ otherExpenses.getAmountExplain()
+							+ "',"
+							+ otherExpenses.getOtherExpensesState()
+							+ ",'"
+							+ otherExpenses.getCreater()
+							+ "',"
+							+"'"+Utils.getNowTimestamp()+ "',"+Utils.getSystemMillis()+")";
+					executeUpdate(sql);
+					
+				} 
+				else if ("delete".equals(action)) {
+					sql = "delete from other_expenses_rela_financial_order where other_expenses_id = " + otherExpenses.getOtherExpensesId();
+					executeUpdate(sql);
+				} 
+				else if ("change".equals(action)) {
+					sql = "update other_expenses_rela_financial_order set adjust_amount=" + otherExpenses.getAdjustAmount() + ""
+							+ ",amount_explain='"
+							+ otherExpenses.getAmountExplain() + "',last_user='"
+							+ workno +"',last_operate_time='"
+							+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+							+Utils.getSystemMillis()+"'"
+							+ " where other_expenses_id = "+otherExpenses.getOtherExpensesId();
+					executeUpdate(sql);
+//					System.out.println(sql);
+				}else if ("display".equals(action)) {
+					sql = "select financial_order_code,other_expenses_type,adjust_amount" +
+						",amount_explain,other_expenses_state from other_expenses_rela_financial_order where other_expenses_id = "
+							+ otherExpenses.getOtherExpensesId() + "";
+					executeQuery(sql);
+					if (rs.next()) {
+						otherExpenses.setFinancialOrderCode(rs.getLong("financial_order_code"));
+						otherExpenses.setOtherExpensesType(rs.getInt("other_expenses_type"));
+						otherExpenses.setAdjustAmount(rs.getFloat("adjust_amount"));
+						otherExpenses.setAmountExplain(rs.getString("amount_explain"));
+						otherExpenses.setOtherExpensesState(rs.getInt("other_expenses_state"));
+						skip = EDIT;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + otherExpenses.getOtherExpensesId() + " not exists");
+					}
+				} else if ("view".equals(action)) {
+					sql = "select financial_order_code,other_expenses_type,adjust_amount" +
+					",amount_explain,other_expenses_state from other_expenses_rela_financial_order where other_expenses_id = "
+						+ otherExpenses.getOtherExpensesId() + "";
+					executeQuery(sql);
+					if (rs.next()) {
+						otherExpenses.setFinancialOrderCode(rs.getLong("financial_order_code"));
+						otherExpenses.setOtherExpensesType(rs.getInt("other_expenses_type"));
+						otherExpenses.setAdjustAmount(rs.getFloat("adjust_amount"));
+						otherExpenses.setAmountExplain(rs.getString("amount_explain"));
+						otherExpenses.setOtherExpensesState(rs.getInt("other_expenses_state"));
+						skip = VIEW;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + otherExpenses.getOtherExpensesId() + " not exists");
+					}
+				}else if ("audit".equals(action)) {
+					sql = "update other_expenses_rela_financial_order set other_expenses_state=" + otherExpenses.getOtherExpensesState() + ""
+					+ ",last_user='"+ workno +"',last_operate_time='"
+					+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+					+Utils.getSystemMillis()+"'"
+					+ " where other_expenses_id = "+otherExpenses.getOtherExpensesId();
+					executeUpdate(sql);
+					if(otherExpenses.getOtherExpensesState()==1){
+						sql = "update financial_order set audit_state= 1,last_user='"
+						+ workno +"',last_operate_time='"
+						+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+						+ Utils.getSystemMillis()+ "' "
+						+ " where financial_order_code = " + otherExpenses.getFinancialOrderCode() + "";
+//						System.out.println(sql);
+						executeUpdate(sql);
+					}else if(otherExpenses.getOtherExpensesState()==2||otherExpenses.getOtherExpensesState()==3){
+						sql = "update financial_order set";
+						if(otherExpenses.getOtherExpensesState()==2){
+							sql += " adjust_profit= adjust_profit -(" + otherExpenses.getAdjustAmount() +"),";
+						}	
+						sql += "audit_state= 2,last_user='"+ workno +"',last_operate_time='"
+						+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+						+ Utils.getSystemMillis()+ "' "
+						+ " where financial_order_code = " + otherExpenses.getFinancialOrderCode() + "";
+//						System.out.println(sql);
+						executeUpdate(sql);
+						if(otherExpenses.getOtherExpensesType()==0){
+							sql = "update customer c set c.residualValue=c.residualValue+("+otherExpenses.getAdjustAmount()+") where c.customerID = (select o.cid from orderinfo o,financial_order fo where o.orderid = fo.order_code and fo.financial_order_code ="+otherExpenses.getFinancialOrderCode()+") ";
+							executeUpdate(sql);
+//							System.out.println(sql);
+						}
+					}
+					queryList();
+				}
+			} else {
+				queryList();
+			}
+		} catch (Exception e) {
+			skip = ERROR;
+			addActionError(e.toString());
+			e.printStackTrace();
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+	
+	public void queryList() throws Exception{
+//		term = Helper.getQuerySql(query, "oerfo.create_timei");
+
+		skip = JSON;
+		sql = "SELECT oerfo.other_expenses_id,oerfo.financial_order_code" +
+				",oerfo.other_expenses_type,oerfo.adjust_amount" +
+				",oerfo.amount_explain,oerfo.other_expenses_state" +
+				",oerfo.creater,oerfo.create_time,oerfo.last_user" +
+				",oerfo.last_operate_time,u1.name userName,u2.name luserName" +
+				" from other_expenses_rela_financial_order oerfo " +
+				" left join user u1 on oerfo.creater = u1.workcardno" +
+				" left join user u2 on oerfo.last_user = u2.workcardno" +
+				" where 1=1 and oerfo.financial_order_code = "+otherExpenses.getFinancialOrderCode()+"";
+//		System.out.println(sql);
+		executeQuery(sql);
+		while (rs.next()) {
+			Long otherExpensesId = rs.getLong("other_expenses_id");
+			Long financialOrderCode = rs.getLong("financial_order_code");
+			int otherExpensesType = rs.getInt("other_expenses_type");
+			int otherExpensesState = rs.getInt("other_expenses_state");
+			Float adjustAmount = rs.getFloat("adjust_amount");
+			String amountExplain = rs.getString("amount_explain");
+			String user = StringUtil.toString(rs.getString("creater"));
+			String luser = StringUtil.toString(rs.getString("last_user"));
+			String userName = StringUtil.toString(rs.getString("userName"));
+			String luserName = StringUtil.toString(rs.getString("luserName"));
+			String createTime = StringUtil.toString(rs.getDate("create_time"))+" "+StringUtil.toString(rs.getTime("create_time"));
+			String updateTime = StringUtil.toString(rs.getDate("last_operate_time"))+" "+StringUtil.toString(rs.getTime("last_operate_time"));
+			if (count != 0)
+				bf.append(",");
+			bf.append("{'financialOrderCode':'" + financialOrderCode + "'")
+			  .append(",'otherExpensesType':'" + otherExpensesType + "'")
+			  .append(",'otherExpensesId':'" + otherExpensesId + "'")
+			  .append(",'otherExpensesState':'" + otherExpensesState + "'")
+			  .append(",'adjustAmount':'" + adjustAmount + "'")
+			  .append(",'amountExplain':'" + amountExplain + "'")
+			  .append(",'user':'" + user + "'")
+			  .append(",'userName':'" + userName + "'")
+			  .append(",'luser':'" + luser + "'")
+			  .append(",'luserName':'" + luserName + "'")
+			  .append(",'createTime':'" + createTime + "'")
+			  .append(",'updateTime':'" + updateTime + "'}");
+			count++;
+		}
+		String counts = "总数：" + count;
+		tojsonNew(counts);
+	}
+	
+	private void calProfit(){
+		Float aRecmoney = 0f;
+		Float aPaymoney = 0f;
+		Float aProfit = 0f;
+		if(otherExpenses.getOtherExpensesType()==0){
+			
+		}else if(otherExpenses.getOtherExpensesType()==1){
+			if(otherExpenses.getAdjustAmount()>0){
+				
+			}else if(otherExpenses.getAdjustAmount()<0){
+				
+			}
+		}
+		
+		sql = "update financial_order set adjust_recmoney=adjust_recmoney+("+aRecmoney+")" +
+				",adjust_paymoney=adjust_paymoney+("+aPaymoney+"),adjust_profit=adjust_profit+("+aProfit+")" +
+				" where financial_order_code = "+otherExpenses.getFinancialOrderCode();
+		executeUpdate(sql);
+	}
+}

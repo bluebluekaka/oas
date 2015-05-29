@@ -1,0 +1,16 @@
+package test;
+
+
+public class Test  {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+//		System.out.println(Utils.getPoint(12.0, 2));
+		String a = "{\"Rows\":["+"{'提示':'无数据,请输入其他条件'}"+" ],\"Total\":\""+0+"\",\"totalRender\":\""+"务数据"+"\"}";
+		System.out.println(a);
+	}
+
+}

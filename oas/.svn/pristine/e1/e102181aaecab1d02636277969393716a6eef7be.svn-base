@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.0//EN"
+    "http://struts.apache.org/dtds/struts-2.0.dtd">
+
+<struts>
+	<constant name="struts.devMode" value="true" />
+	<constant name="struts.configuration.xml.reload" value="false" />
+	<constant name="struts.action.extension" value="aspx,," />
+	<constant name="struts.objectFactory" value="spring" />
+	<constant name="struts.i18n.encoding" value="utf-8"/>
+
+	<include file="struts-default.xml" />
+	<package name="app-default" extends="struts-default">
+
+		<global-results>
+			<result name="401" type="dispatcher">/common/401.jsp</result>
+			<result name="success" type="dispatcher">/common/message.jsp</result>
+			<result name="error" type="dispatcher">/common/message.jsp</result>
+			<result name="json" type="dispatcher">/common/json.jsp</result>
+			<result name="check" type="dispatcher">/common/check.jsp</result>
+			<result name="data" type="dispatcher">/common/data.jsp</result>
+			<result name="login">/logon.jsp</result>
+		</global-results>
+	</package>
+
+	<package name="default" extends="app-default" namespace="/">
+		<action name="logon" class="com.oas.web.action.LogonAction">
+			<result name="success" type="redirect">/index.jsp</result>
+		</action>
+		<action name="user" class="com.oas.web.json.UserJson">
+			<result name="success" type="redirect">/manager/user_list.jsp</result>
+			<result name="edit">user_info.jsp</result>
+		</action>
+		<action name="offer" class="com.oas.web.json.OfferCompanyJson">
+			<result name="success" type="redirect">/manager/offer_list.jsp</result>
+			<result name="edit">offer_info.jsp</result>
+		</action>
+		<action name="cust" class="com.oas.web.json.CustomerJson">
+			<result name="success" type="redirect">/manager/customer_list.jsp</result>
+			<result name="edit">customer_info.jsp</result>
+			<result name="view">customer_view.jsp</result>
+			<result name="select">customer_select.jsp</result>
+		</action>
+		<action name="userlogs" class="com.oas.web.json.UserLogsJson"/>
+		<action name="otherExpenses" class="com.oas.web.json.OtherExpensesJson">
+			<result name="success" type="redirect">financial/financial_list.jsp</result>
+			<result name="edit">other_expenses_info.jsp</result>
+			<result name="view">other_expenses_view.jsp</result>
+		</action>
+ 		<action name="orderlogs" class="com.oas.web.json.OrderLogsJson"/>
+ 		<action name="orderMargin" class="com.oas.web.json.OrderMarginJson"/>
+		<action name="order" class="com.oas.web.json.OrderJson">
+			<result name="edit">order_info.jsp</result>
+			<result name="DISPLAY">order_display.jsp</result>
+	 		<result name="success" type="redirect">/order/order_list.jsp</result>
+		</action>
+		<action name="query" class="com.oas.web.json.QueryJson"/>
+		<action name="orderOffset" class="com.oas.web.json.OrderOffsetJson">
+			<result name="success" type="redirect">financial/order_offset_list.jsp</result>
+			<result name="edit">order_offset_info.jsp</result>
+			<result name="view">order_offset_view.jsp</result>
+		</action>
+ 		<action name="financial" class="com.oas.web.json.FinancialJson">
+			<result name="success" type="redirect">financial/financial_list.jsp</result>
+			<result name="edit">financial_info.jsp</result>
+			<result name="view">financial_view.jsp</result>
+		</action>
+		<action name="transfer" class="com.oas.web.json.TransferJson">
+			<result name="success" type="redirect">financial/transfer_list.jsp</result>
+			<result name="edit">transfer_info.jsp</result>
+			<result name="edit1">transfer_offset_info.jsp</result>
+			<result name="view">transfer_view.jsp</result>
+		</action>
+	</package>
+
+</struts>
+

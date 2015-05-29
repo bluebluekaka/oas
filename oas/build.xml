@@ -1,0 +1,43 @@
+<project name="ccm" default="help">
+	<property name="destjar" value="/temp/oas.jar" />
+	<property name="destwar" value="/temp/oas.war" />
+	
+	<target name="help">
+		<echo>hello,world</echo>
+	</target>
+
+	<target name="SourceBackup">
+		<delete dir="war/WEB-INF/work" />
+		<zip destfile="${backupdir}/ctis.dat" basedir="." excludes="war/WEB-INF/lib/*.jar" />
+	</target>
+ 
+	<target name="makewar">
+		<antcall target="makejar" />
+		<copy file="${destjar}" tofile="war/WEB-INF/lib/oas.jar"/>
+		<delete dir="war/WEB-INF/work" />
+		<delete dir="war/WEB-INF/tmp" />
+		<delete dir="war/WEB-INF/classes/com" />
+		<delete dir="war/WEB-INF/classes/test" />
+		<war destfile="${destwar}" webxml="war/WEB-INF/web.xml">
+			<fileset dir="war">
+				<exclude name="**/.svn" />
+				<exclude name="**/*.class" />
+				<exclude name="**/license" />
+			</fileset>
+		</war>
+		<delete file="war/WEB-INF/lib/oas.jar" />
+		<echo>please refresh project</echo>
+	</target>
+
+	<target name="makejar">
+		<delete dir="${destjar}" />
+		<jar destfile="${destjar}" basedir="war/WEB-INF/classes" excludes="**/test/**,/*.xml,/*.properties">
+			<manifest>
+				<attribute name="Built-By" value="ewzhu" />
+				<attribute name="Implementation-Vendor" value="" />
+				<attribute name="Implementation-Title" value="" />
+				<attribute name="Implementation-Version" value="1.0.0.1" />
+			</manifest>
+		</jar>
+	</target>
+</project>

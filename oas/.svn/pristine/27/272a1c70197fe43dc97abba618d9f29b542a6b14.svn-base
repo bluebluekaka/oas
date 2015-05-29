@@ -1,0 +1,66 @@
+﻿<%@page language="java" contentType="text/plain; charset=UTF-8" import="java.text.*,com.oas.objects.*,java.util.*,com.oas.common.*"%>
+   <%
+    	String usertype = (String)session.getAttribute(Config.USER_TYPE);
+    	int utype = 0;
+    	if(!Utils.isNull(usertype)){
+    		utype = Integer.valueOf(usertype);
+    	}
+    	String userid = (String)session.getAttribute(Config.USER_ID);
+   %>
+   
+   
+var indexdata = 
+[
+	<% if(utype==Config.USER_TYPE_ADMIN){%>
+		{ text: '管理员菜单',isexpand:true, children: [ 
+	        {url:"manager/user_list.jsp",text:"用户管理"},
+	        {url:"manager/user_logs_list.jsp",text:"用户日志"}
+		]}
+	<%}else if (utype==Config.USER_TYPE_COMMON){%>
+		{ text: '业务员菜单',isexpand:true, children: [ 
+			{url:"manager/customer_list.jsp",text:"客户管理"},
+	        {url:"order/order_list.jsp",text:"订单管理"},
+	        {url:"financial/financial_tab.jsp",text:"财务管理"} 
+		]}
+	<%}else if (utype==Config.USER_TYPE_COMMON_MANERGER){%>
+		{ text: '业务员经理菜单',isexpand:true, children: [ 
+			{url:"manager/customer_list.jsp",text:"客户管理"},
+	        {url:"order/order_tab.jsp",text:"订单管理"},
+	        {url:"financial/financial_tab.jsp",text:"财务管理"}
+		]}
+	<%}else if (utype==Config.USER_TYPE_FINANCE){%>
+		{ text: '财务员菜单',isexpand:true, children: [ 
+	        {url:"order/order_tab.jsp",text:"订单管理"},
+	        {url:"financial/financial_tab.jsp",text:"财务管理"},
+	        {url:"financial/transfer_tab.jsp",text:"转账管理"},
+	        {url:"manager/customer_list.jsp",text:"客户管理"},
+	        {url:"financial/balance_list.jsp",text:"对账（测试）"},
+	        {url:"manager/offer_list.jsp",text:"供应商管理"}  
+		]}
+	<%}else if (utype==Config.USER_TYPE_FINANCE_MANERGER){%>
+		{ text: '财务经理菜单',isexpand:true, children: [ 
+	        {url:"order/order_tab.jsp",text:"订单管理"},
+	        {url:"financial/financial_tab.jsp",text:"财务管理"},
+	        {url:"financial/transfer_tab.jsp",text:"转账管理"},
+	        {url:"financial/order_offset_list.jsp",text:"冲账管理"},
+	        {url:"manager/customer_list.jsp",text:"客户管理"},
+	        {url:"financial/balance_list.jsp",text:"对账（测试）"},
+	        {url:"manager/offer_list.jsp",text:"供应商管理"} 
+		]}
+	<%}else if (utype==Config.USER_TYPE_TOP_MANERGER){%>	
+		{ text: '总经理菜单',isexpand:true, children: [ 
+		  	{url:"manager/user_list.jsp",text:"用户管理"},
+	        {url:"manager/user_logs_list.jsp",text:"用户日志"},
+	        {url:"order/order_logs_list.jsp",text:"订单操作日志"},
+			{url:"manager/customer_list.jsp",text:"客户管理"},
+	        {url:"order/order_tab.jsp",text:"订单管理"},
+	        {url:"financial/financial_tab.jsp",text:"财务管理"},
+	        {url:"financial/transfer_tab.jsp",text:"转账管理"},
+	        {url:"manager/offer_list.jsp",text:"供应商管理"},
+	        {url:"financial/order_offset_list.jsp",text:"冲账管理"} 
+		]}
+	<%}%>
+	
+];
+
+ 

@@ -1,0 +1,69 @@
+package com.oas.common;
+
+public class Config {
+	public static final String version = "1.02.140317a";
+
+	public static String proxool = "proxool.oas";
+	public static String ROOTDIR = "rootdir";
+
+	public static final String USER_ID = "user_id";
+	public static final String USER_NAME = "user_name";
+	public static final String USER_TYPE = "user_type";
+	public static final String USER_WORKNO = "user_workno";
+
+	public static final int USER_TYPE_ADMIN = 0;
+	public static final int USER_TYPE_COMMON = 1;
+	public static final int USER_TYPE_COMMON_MANERGER = 2;
+	public static final int USER_TYPE_FINANCE = 3;
+	public static final int USER_TYPE_FINANCE_MANERGER = 4;
+	public static final int USER_TYPE_TOP_MANERGER = 5;
+
+	/* 0 wait common manager, 1 common manager allow, 2 common manager disallow,3 wait finance,4 wait finance manager,5 finance manager allow,6 finance manager disallow */
+	public static final int ORDER_STATE_CREATE = 0;//生成中
+	public static final int ORDER_STATE_WAIT_COMMON_MANAGER = 1;
+	public static final int ORDER_STATE_ALLOW_COMMON_MANAGER = 2;
+	public static final int ORDER_STATE_DISALLOW_COMMON_MANAGER = 3;
+	public static final int ORDER_STATE_WAIT_FINANCE = 4;
+	public static final int ORDER_STATE_DISALLOW_FINANCE = 5;
+	public static final int ORDER_STATE_WAIT_FINANCE_MANAGER = 6;
+	public static final int ORDER_STATE_ALLOW_FINANCE_MANAGER = 7;
+	public static final int ORDER_STATE_DISALLOW_FINANCE_MANAGER = 8;
+	public static final int ORDER_STATE_ALLOW_TOP_MANAGER = 9;
+	public static final int ORDER_STATE_DISALLOW_TOP_MANAGER = 10;
+	public static final int ORDER_STATE_END = 11;
+	public static final int ORDER_STATE_DISALLOW = 100;
+	public static final int ORDER_STATE_ALLOW = 101;
+	public static final int ORDER_STATE_CANCLE = 102;
+
+	public static final int ORDER_TYPE_ORDER = 0;
+	public static final int ORDER_TYPE_CANCEL = 1;
+
+	public static final int ORDER_PRC_TYPE_INTERNATIONL = 0;
+	public static final int ORDER_PRC_TYPE_INTERNAL = 1;
+	public static final int ORDER_PRC_TYPE_HOTEL = 2;
+	public static final int ORDER_PRC_TYPE_MARK = 3;
+
+	public static final int ORDER_TYPE_ALL = 99;
+
+	public static final int ADULT = 1;
+	public static final int CHILD = 2;
+	public static final int BABY = 3;
+
+	public static final int PAGE_SIZE = 30;
+	
+
+	public static final int OTHER_EXPENSES_RELA_ORDER_ADJUSTMENT = 0;
+	public static final int OTHER_EXPENSES_RELA_ORDER_FEES = 1;
+
+	public static final int STATE_NEW = 0;
+	public static final int STATE_AUDIT_ING = 1;
+	public static final int STATE_AUDIT_SUC = 2;
+	public static final int STATE_AUDIT_FAIL = 3;
+	public static final int STATE_AUDIT_END = 4;
+	
+	//客户状态
+	public static final String CUSTOMER_DO = "0"; //在用
+	public static final String CUSTOMER_UN_DO = "1"; //禁用
+	public static final String CUSTOMER_CHANGE = "2"; //转移
+ 
+}

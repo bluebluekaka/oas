@@ -1,0 +1,201 @@
+<%@page language="java" contentType="text/html;charset=UTF-8" %><%@ include file="/common/taglibs.jsp"%>
+<%
+	String action = "query";
+	String title = "查询";
+	String url = action+"?moduleName=customer&t="+Utils.getSystemMillis();
+					
+	String query = request.getParameter("query"); 
+	String customerid = request.getParameter("customerid");
+	if(Utils.isNull(customerid)){
+		customerid = "";
+	}
+	String name = request.getParameter("name");
+	if(!Utils.isNull(name)){
+		name = java.net.URLDecoder.decode(name,"UTF-8");
+	}else{
+		name = "";
+	}
+	String phone = request.getParameter("phone");
+	if(Utils.isNull(phone)){
+		phone = "";
+	}
+	String company = request.getParameter("company");
+	if(!Utils.isNull(company)){
+		company = java.net.URLDecoder.decode(company,"UTF-8");
+	}else{
+		company = "";
+	}
+	String userName = request.getParameter("userName");
+	if(!Utils.isNull(userName)){
+		userName = java.net.URLDecoder.decode(userName,"UTF-8");
+	}else{
+		userName = "";
+	}
+	String qq = request.getParameter("qq");
+	if(Utils.isNull(qq)){
+		qq = "";
+	}
+	String queryName = "&customer.name="+name+"&customer.company="+company+"&user.name="+userName+"";
+	String term = "customer.customerID="+customerid+"&customer.phone="+phone+"&customer.qq="+qq;
+%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title></title>    
+	<link href="../ui/lib/ligerUI/skins/Aqua/css/ligerui-all.css" rel="stylesheet" type="text/css" />
+	<link href="../ui/lib/ligerUI/skins/Gray/css/dialog.css" rel="stylesheet" type="text/css" />
+	<script src="../ui/lib/jquery/jquery-1.3.2.min.js" type="text/javascript"></script>   
+    <script src="../ui/lib/ligerUI/js/core/base.js" type="text/javascript"></script>
+    <script src="../ui/lib/ligerUI/js/ligerui.all.min.js" type="text/javascript"></script> 
+    <link href="../ui/lib/ligerUI/skins/ligerui-icons.css" rel="stylesheet" type="text/css" />
+    
+	<script src="../ui/helper.js" type="text/javascript"></script> 
+	<script type="text/javascript">
+    var grid=null; 
+    var datas;
+    var max = 0;
+    $(function () {  
+	  		$("form").ligerForm();
+	  		 
+            var url1 = '<%=url%>&<%=term%>'+encodeURI(encodeURI('<%=queryName%>'));
+	  		myGrid= $("#grids").ligerGrid({
+        		 checkbox: false,
+                 columns:[	{ display: '客户编码', name: 'customerid', width: 80},
+                             { display: '客户名称', name: 'name' },
+                             { display: '公司名称', name: 'company', width: 150  },
+                             { display: '可支付余额', name: 'residualValue', width: 100,type:'float' },
+                             { display: '待支付欠款', name: 'paidAmount', width: 100,type:'float' },
+                             { display: '所属业务员', name: 'salesman' }
+                             ], 
+                             isScroll: true, showToggleColBtn: false, width: '100%',
+                             height:'98%',
+                             url: url1,
+                 			 showTitle: false, columnWidth: 100  , frozen:false,
+                 			toolbar: { items: [{ text: '自定义查询',click:f_inputQuery, icon: 'search2'},{ line:true }
+                                               ]
+                                               }
+         
+             });
+    });  
+	function f_totalRender(){
+		return datas.totalRender;
+	}
+	
+	function submitThis(){
+		form1.action = "<%=jspName%>"; 
+		form1.submit();
+	}
+	
+	 function f_onCheckAllRow(checked)
+        {	 
+            for (var rowid in this.records)
+            {
+                if(checked)
+                    addCheckedCustomer(this.records[rowid]['HideID']);
+                else
+                    removeCheckedCustomer(this.records[rowid]['HideID']);
+            }
+        }
+ 
+        var checkedObj = [];
+        function findCheckedObj(obj)
+        {
+            for(var i =0;i<checkedObj.length;i++)
+            {
+                if(checkedObj[i] == obj) return i;
+            }
+            return -1;
+        }
+        function addCheckedObj(obj)
+        {
+            if(findCheckedObj(obj) == -1)
+                checkedObj.push(obj);
+        }
+        function removeCheckedObj(obj)
+        {
+            var i = findCheckedObj(obj);
+            if(i==-1) return;
+            checkedObj.splice(i,1);
+        }
+        function f_isChecked(rowdata)
+        {
+            if (findCheckedObj(rowdata) == -1)
+                return false;
+            return true;
+        }
+        function f_onCheckRow(checked, data)
+        {
+            if (checked) addCheckedObj(data);
+            else removeCheckedObj(data);
+        }	
+	function f_inputQuery(){
+		$.ligerDialog.open({ target: $("#target1"),title:'<%=title%>',height: 300,width: 500,isResize: true,showMax:true, 
+			buttons: [
+			{ text: '清空', 
+				onclick: function (item, dialog) {
+					$("#customerid").val("");
+					$("#name").val("");
+					$("#phone").val("");
+					$("#qq").val("");
+					$("#company").val("");
+					$("#userName").val("");
+				} },
+			{ text: '确定', 
+				onclick: function (item, dialog) {
+					 location.href = '<%=jspName%>?customerid='+ $("#customerid").val()
+					 	+'&name='+$("#name").val()+'&phone='+ $("#phone").val()
+					 	+'&company='+ $("#company").val()+'&userName='+ $("#userName").val()+'&qq='+ $("#qq").val()+'';
+				} },
+			{ text: '取消', onclick: function (item, dialog) { dialog.hide(); } } ] });
+    }
+    
+    function doCommit(){
+    	var row = myGrid.getSelectedRow();
+    	if(!row){
+         	$.ligerDialog.warn('<br/>请选择一个客户');
+		 	return 'error';
+        }
+        return row;
+    }
+</script>
+<style type="text/css">
+           body{ font-size:12px;}
+        .l-table-edit {}
+        .l-table-edit-td{ padding:4px;}
+        .l-button-submit,.l-button-test{width:80px; float:left; margin-left:10px; padding-bottom:2px;}
+        .l-verify-tip{ left:230px; top:120px;}
+        #errorLabelContainer{ padding:10px; width:300px; border:1px solid #FF4466; display:none; background:#FFEEEE; color:Red;}
+    </style>	 
+</head>
+<body style="padding:0 2px 2px 2px;overflow:hidden;" >
+<form name="form1" method="post" id="form1">
+<textarea name="fb"  style="display:none" ></textarea>
+
+<div >
+<div id='grids' ></div></div>
+<div id="target1"  style="display:none" >
+  <table height="72" cellpadding="0" cellspacing="0" class="l-table-edit" >
+    <tr>
+      <td align="right" class="l-table-edit-td">客户编码:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="customerid" name="customerid" value="<%=customerid %>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">客户名称:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="name" name="name" value="<%=name %>" /></td>
+    </tr>
+    <tr style="display:none">
+      <td align="right" class="l-table-edit-td">手机:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="phone" name="phone" value="<%=phone %>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">QQ:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="qq" name="qq" value="<%=qq %>" /></td>
+    </tr>
+   
+    <tr>
+      <td align="right" class="l-table-edit-td">公司名称:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="company" name="company" value="<%=company %>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">所属业务员名称:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="userName" name="userName" value="<%=userName %>" /></td>
+    </tr>
+</table> 
+</div>
+</form> 
+</body>
+</html>

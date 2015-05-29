@@ -1,0 +1,563 @@
+<%@page language="java" contentType="text/html;charset=UTF-8" %><%@ include file="/common/taglibs.jsp"%>
+<%
+	String action = "order";
+	String title = "查询";
+	String url = action+"?t="+Utils.getSystemMillis();
+	 
+	String stime = request.getParameter("stime");
+	if(stime==null) stime = (String)session.getAttribute("stime");
+	String etime = request.getParameter("etime"); 
+	if(etime==null) etime = (String)session.getAttribute("etime");
+	if(Utils.isNull(stime)||Utils.isNull(etime)){
+		stime = Utils.getAddDate(Utils.getNowDate(),-1)+" 00:00";
+		etime = Utils.getNowDate()+" 23:59";
+	}else{
+		session.setAttribute("stime",stime);
+		session.setAttribute("etime",etime);
+	}
+	
+	String sid = request.getParameter("sid");
+	if(sid==null) sid = (String)session.getAttribute("sid");
+	if(Utils.isNull(sid)){
+		sid = "";
+	}else{
+		session.setAttribute("sid",sid);
+	}
+	
+	String pnr = request.getParameter("pnr");
+	 
+	if(pnr==null){
+		pnr = "";
+	}else{
+		pnr = java.net.URLDecoder.decode(pnr,"UTF-8");
+	}
+	
+	String type = request.getParameter("type"); 
+	// if(type==null) type = (String)session.getAttribute("type");
+	if(type==null){
+		type = Config.ORDER_TYPE_ALL+"";
+	}else{
+		//session.setAttribute("type",type);
+	}
+ 	String maker = request.getParameter("maker"); 
+	if(maker==null) maker = (String)session.getAttribute("maker");
+	if(maker==null){
+		maker = "";
+	}else{
+		session.setAttribute("maker",maker);
+	}
+	String offer = request.getParameter("offer"); 
+	if(offer==null) offer = (String)session.getAttribute("offer");
+	if(offer==null){
+		offer = "";
+	}else{
+		offer = java.net.URLDecoder.decode(offer,"UTF-8");
+		session.setAttribute("offer",offer);
+	}
+ 	String state = request.getParameter("state");
+ 	if(state==null) state = (String)session.getAttribute("state");
+	if(state==null){
+		state = Config.ORDER_TYPE_ALL+"";
+	}else{
+		session.setAttribute("state",state);
+	}
+ 	
+ 	String piao = request.getParameter("piao");
+  
+	if(piao==null){
+		piao = "";
+	} 
+ 	String cname = request.getParameter("cname");
+ 	if(cname==null) cname = (String)session.getAttribute("cname");
+	if(cname==null){
+		cname = "";
+	}else{
+		cname = java.net.URLDecoder.decode(cname,"UTF-8");
+		session.setAttribute("cname",cname);
+	}
+	String clientid = request.getParameter("clientid");
+	if(clientid==null) clientid = (String)session.getAttribute("clientid");
+	if(clientid==null){
+		clientid = "";
+	}else{
+		session.setAttribute("clientid",clientid);
+	}
+	String rl = request.getParameter("rl");
+	if(rl==null) rl = (String)session.getAttribute("rl");
+	
+	String ck = request.getParameter("ck");
+	if(ck==null) ck = (String)session.getAttribute("ck");
+	
+	if(ck==null){
+		ck = "";
+	}else{
+		state = ck;
+	}
+	
+	if(rl==null||"0".equals(rl)){
+		rl = "0";
+		state = Config.ORDER_TYPE_ALL+"";
+	} 
+	session.setAttribute("rl",rl);
+	session.setAttribute("ck",ck);
+ 	String term = "query.stime="+stime+"&query.etime="+etime+"&sid="+sid+"&maker="+maker+"&offer="+offer+"&pnr="+java.net.URLEncoder.encode(java.net.URLEncoder.encode(pnr,"UTF-8"))+"&clientid="+clientid+"&type="+type+"&cname="+java.net.URLEncoder.encode(java.net.URLEncoder.encode(cname,"UTF-8"))+"&piao="+piao+"&state="+state;
+ 	String editJsp = jspName.replace("list","info"); 
+ 	
+ 	String usertype = (String)session.getAttribute(Config.USER_TYPE);
+		int utype = 1;
+		if(usertype!=null)
+			utype = Integer.valueOf(usertype);
+					
+	String query = request.getParameter("query"); 
+%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title></title>    
+	<link href="../ui/lib/ligerUI/skins/Aqua/css/ligerui-all.css" rel="stylesheet" type="text/css" />
+	<link href="../ui/lib/ligerUI/skins/Gray/css/dialog.css" rel="stylesheet" type="text/css" />
+	<script src="../ui/lib/jquery/jquery-1.3.2.min.js" type="text/javascript"></script>   
+    <script src="../ui/lib/ligerUI/js/core/base.js" type="text/javascript"></script>
+    <script src="../ui/lib/ligerUI/js/ligerui.all.min.js" type="text/javascript"></script> 
+    <link href="../ui/lib/ligerUI/skins/ligerui-icons.css" rel="stylesheet" type="text/css" />
+    
+	<script src="../ui/helper.js" type="text/javascript"></script> 
+	<script type="text/javascript">
+	function doCommit(){
+		if(checkedCustomer.length==0){
+			 $.ligerDialog.warn('<br/>请选择一个订单');
+			 return 'error';	
+		}else if(checkedCustomer.length>1){
+			$.ligerDialog.warn('<br/>您选择了'+checkedCustomer.length+'个订单<br/><br/>请选择单个订单');
+			return 'error';
+		}	
+        return (checkedCustomer);
+    }
+   	
+    var grid=null; 
+    var datas;
+    var max = 0;
+    var _url='<%=url%>&<%=term%>';
+    $(function () {  
+			$("#stime").ligerDateEditor({ showTime: true,initValue:'<%=stime%>'});
+        	$("#etime").ligerDateEditor({ showTime: true,initValue:'<%=etime%>'}); 
+	 
+			
+	  		$("#type").ligerComboBox({
+                data: [
+				{ id: <%=Config.ORDER_TYPE_ALL%>, text: '全部' },
+                { id: <%=Config.ORDER_TYPE_ORDER%>, text: '订票' },
+             	{ id: <%=Config.ORDER_TYPE_CANCEL%>, text: '退票' }
+                ], valueFieldID: 'type0'
+            });
+ 			$("#type").ligerGetComboBoxManager().setValue(<%=type%>);
+ 			
+ 			
+	  		$("#offer").ligerComboBox({
+                url:'offer?action=data',
+                valueField : 'id',
+                textField: 'name',
+                valueFieldID: 'type1'
+            });
+ 		   $("#offer").ligerGetComboBoxManager().setValue('<%=offer%>');
+ 			
+			var dataGrid3 = 
+            	[
+					 
+					{ id: <%=Config.ORDER_STATE_CREATE%>, 
+						name: '<%=Helper.getOrterState1(Config.ORDER_STATE_CREATE)%>' },
+					{ id: <%=Config.ORDER_STATE_WAIT_COMMON_MANAGER%>, 
+						name: '<%=Helper.getOrterState1(Config.ORDER_STATE_WAIT_COMMON_MANAGER)%>' },
+					{ id: <%=Config.ORDER_STATE_DISALLOW_COMMON_MANAGER%>,
+						name: '<%=Helper.getOrterState1(Config.ORDER_STATE_DISALLOW_COMMON_MANAGER)%>' },
+					{ id: <%=Config.ORDER_STATE_ALLOW_COMMON_MANAGER%>, 
+						name: '<%=Helper.getOrterState1(Config.ORDER_STATE_ALLOW_COMMON_MANAGER)%>' },
+					{ id: <%=Config.ORDER_STATE_WAIT_FINANCE%>, 
+						name: '<%=Helper.getOrterState1(Config.ORDER_STATE_WAIT_FINANCE)%>' },
+					{ id: <%=Config.ORDER_STATE_DISALLOW_FINANCE%>, 
+						name: '<%=Helper.getOrterState1(Config.ORDER_STATE_DISALLOW_FINANCE)%>' }, 
+					{ id: <%=Config.ORDER_STATE_END%>, name: '结束' } ,
+					{ id: <%=Config.ORDER_STATE_CANCLE%>, name: '取消' }
+					
+                ]; 
+			$("#checkboxlist1").ligerCheckBoxList({
+                data: dataGrid3,
+				rowSize :4,
+                textField: 'name' 
+            });
+			liger.get("checkboxlist1").setValue('<%=ck%>');
+			
+			 
+			var dataGrid = [
+                { id: 0, name: '全部'},         
+                { id: 1, name: '多选'}
+                ]; 
+            $("#radiolist1").ligerRadioList({
+                data: dataGrid,
+                textField: 'name' 
+            });
+			liger.get("radiolist1").setValue('<%=rl%>'); 	
+			 
+			if('<%=rl%>'=='0')
+			liger.get("checkboxlist1").set('disabled', true);
+			
+			
+ 			 
+						
+			$("form").ligerForm();
+	  		 
+            $.getJSON(_url,
+            function(json) 
+            {
+				var i0 = 0;
+                var colnames="";
+                for(var i in json.Rows[0])  
+                {
+						var w = 80;
+						if(i0==2||i0>=12)
+							w = 105;
+						else if(i0==9){
+							w=105;
+						}
+                        var hides='';
+                        if(i.indexOf('Hide')!=-1) 
+                        	hides = ',hide:true';
+                        colnames+=",{name:'"+i+"',display:'"+i+"',width:"+w + hides+"}";
+						i0++;
+                }
+                colnames=colnames.substr(1,colnames.length);
+                datas=json;
+                eval(                
+                        "grid=$('#grids').ligerGrid({"+
+                        "columns:["+colnames+"],"+   
+                        "data:datas,"+    
+                        "dataAction:'local',"+
+                        "height: '100%',"+
+                        "usePager:false,"+
+                        "rownumbers:true,"+
+                        "checkbox: true,"+
+                        "toolbar: { items: ["+
+                        "{ text: '开始时间：<%=stime%>'},{ line:true }"+
+                        ",{ text: '结束时间：<%=etime%>'},{ line:true }"+
+                        ",{ text: '自定义查询',click:f_inputUser, icon: 'search2'},{ line:true }"+
+                          <%
+                        if(Utils.isNull(query)){		
+	                        if(utype!=Config.USER_TYPE_COMMON){
+	                        	if(utype==Config.USER_TYPE_COMMON_MANERGER||utype==Config.USER_TYPE_TOP_MANERGER){%>
+	                        		",{ text: '生成',click:f_addUser, icon: 'plus'},{ line:true }"+
+	                        	<%}%>
+	                        	",{ text: '修改/审核',click:f_editUser, icon: 'edit'},{ line:true }"+
+	                        	<%if(utype==Config.USER_TYPE_FINANCE||utype==Config.USER_TYPE_TOP_MANERGER){%>
+	                        		",{ text: '财务一键通过',click:f_endOrder, icon: 'edit'},{ line:true }"+
+	                        	<%}%>
+	                        <%}else{%>
+	                        	",{ text: '生成',click:f_addUser, icon: 'plus'},{ line:true }"+
+	                        	",{ text: '修改',click:f_editUser, icon: 'edit'},{ line:true }"+
+	                        <%}%>
+                        ",{ text: '导出Excel',click:downloadThis,icon: 'save'}"+
+                        <%}%>
+                        "]},"+
+                        "totalRender: f_totalRender,"+
+                        "isChecked: f_isChecked, onCheckRow: f_onCheckRow, onCheckAllRow: f_onCheckAllRow,onDblClickRow:f_display"+
+                        ",heightDiff:-12"+
+                        "});"
+                    ); 
+            }); 
+    });  
+	
+		function checkb(){
+			var v = liger.get("radiolist1").getValue();
+			if(v==0)  setDisabled();
+			else setEnabled();
+		}
+		function setDisabled()
+        {
+            liger.get("checkboxlist1").set('disabled', true);
+        }
+        function setEnabled()
+        {
+            liger.get("checkboxlist1").set('disabled', false);
+        }
+		 
+	function f_totalRender(){
+		var pnr = '<%=pnr%>';
+		if(pnr!=''){
+			var pnrl;
+			if(pnr.indexOf("，")!=-1){
+				pnrl = pnr.split("，");
+			}else
+				pnrl = pnr.split(",");
+        	var str = "";var c=0;
+           	 $(datas.Rows).each(function ()
+            {
+            	var s = this;
+            	var i = 1;
+                for(var n in s){  
+		           	if(i==11){//pnr
+		           		if(c>0) str += ",";
+		           		str += s[n]; 
+		           		c++; 
+		           	}
+		           	i++;
+	      		} 
+            });
+            var nopnr = "";var cc=0;
+            for(var key in pnrl) { 
+            	var p0 = pnrl[key];
+            	if(unescape(str).indexOf(p0)==-1){
+            		if(cc>0) nopnr+=",";
+            		nopnr+=p0;
+            		cc++;
+            	} 
+            }
+            if(nopnr!=""){
+            	 $.ligerDialog.warn('<br/>不存在的PNR码:'+nopnr);
+            } 
+        }
+		
+		return datas.totalRender;
+	}
+	
+	function unescape(str) {
+	    var elem = document.createElement('div');
+	    elem.innerHTML = str;
+	    return elem.innerText || elem.textContent;
+	}
+	
+	function getdata(URL){
+				$.getJSON(URL,
+					function(json) {
+						var datas = json;
+ 						grid.set({ data: datas });  
+					}
+				); 
+	}
+	//setTimeout(function e(){
+    //			setInterval(function ed(){
+    //				getdata(_url+'&t1='+Math.random(100000));
+    //			},8000);
+    //},1000);
+	function submitThis(){
+		form1.action = "<%=jspName%>"; 
+		form1.submit();
+	}
+	
+ 	function downloadThis(){
+		form1.action = "../common/download.jsp?name=<%=jspName%>&start_date=<%=stime%>&end_date=<%=etime%>"; 
+		form1.fb.value = getDatasValue(datas);	
+		form1.submit();
+	}
+	
+	 function f_onCheckAllRow(checked)
+        {	 
+            for (var rowid in this.records)
+            {
+                if(checked)
+                    addCheckedCustomer(this.records[rowid]['HideID']);
+                else
+                    removeCheckedCustomer(this.records[rowid]['HideID']);
+            }
+        }
+ 
+        var checkedCustomer = [];
+        function findCheckedCustomer(HideID)
+        {
+            for(var i =0;i<checkedCustomer.length;i++)
+            {
+                if(checkedCustomer[i] == HideID) return i;
+            }
+            return -1;
+        }
+        function addCheckedCustomer(HideID)
+        {
+            if(findCheckedCustomer(HideID) == -1)
+                checkedCustomer.push(HideID);
+        }
+        function removeCheckedCustomer(HideID)
+        {
+            var i = findCheckedCustomer(HideID);
+            if(i==-1) return;
+            checkedCustomer.splice(i,1);
+        }
+        function f_isChecked(rowdata)
+        {
+            if (findCheckedCustomer(rowdata.HideID) == -1)
+                return false;
+            return true;
+        }
+        function f_onCheckRow(checked, data)
+        {
+            if (checked) addCheckedCustomer(data.HideID);
+            else removeCheckedCustomer(data.HideID);
+        }
+	
+  	function f_addUser(){
+		location.href = "<%=action%>?action=add" ;      
+    }
+    
+    function f_endOrder(){
+		if(checkedCustomer.length==0){
+			 $.ligerDialog.warn('<br/>请选择一个订单');
+			 return ;	
+		} 
+		 	var rows = grid.getCheckedRows();
+			var str = "";
+           	 $(rows).each(function ()
+            {
+            	var s = this;
+            	var i = 1;
+                for(var n in s){  
+		           	if(i==5){
+		           		if(s[n]!='&#20986;&#31080;&#25104;&#21151;'){
+		           			str = 'err';
+		           			break;
+		           		}
+		           	}else if(i==2){
+		           		if(s[n]!='false'){
+		           			str = 'err1';
+		           			break;
+		           		}
+		           	}
+		           	if(i==3||i==13){
+		           		if(i==13) str += s[n]+";";
+		           		else str += s[n]+",";
+		           	}
+					
+		           	i++;
+	      		} 
+            });
+           	if(str!='err'){
+				if(str=='err1'){
+					alert("您选择了还未到审核时间的订单。");
+					}else{
+	            $.ligerDialog.confirm('<br/>确定所选订单通过审核吗？',
+	                 	function (yes) {
+		                 	if(yes==true) {
+		                 		location.href = "<%=action%>?action=opass&sid="+str;  
+		                 	}
+	                 	} 
+	            );}
+        	}else{
+        		alert("您选择了不能一键审核的订单。");
+        	}
+    }
+   
+	function f_editUser(item){
+		if(checkedCustomer.length==0){
+			 $.ligerDialog.warn('<br/>请选择一个订单');
+			 return ;	
+		}else if(checkedCustomer.length>1){
+			$.ligerDialog.warn('<br/>您选择了'+checkedCustomer.length+'个订单<br/><br/>请选择单个订单');
+			return;
+		}	
+		location.href = "<%=action%>?action=display&sid="+checkedCustomer;
+		  
+    }	
+	function f_inputUser(){
+		$.ligerDialog.open({ target: $("#target1"),title:'<%=title%>',height: 300,width: 530,isResize: true,showMax:true, 
+			buttons: [
+			{ text: '确定', 
+				onclick: function (item, dialog) {
+					var rl0 = liger.get("radiolist1").getValue();
+					var ck0 = liger.get("checkboxlist1").getValue();
+					 
+					if(rl0==1&&ck0==null){
+						alert("请您选择多选的过滤状态");
+						return;	
+					}
+					
+				location.href = '<%=jspName%>?stime='+ $("#stime").val()
+					 	+'&etime='+$("#etime").val()+'&sid='+ $("#sid").val()+'&query=<%=query%>'+"&pnr="+ getReplace($("#pnr").val(),"，",",")+"&clientid="+ $("#clientid").val()+"&maker="+ $("#maker").val()+"&type="+ $("#type0").val()+"&piao="+ getReplace($("#piao").val(),"，",",") +"&cname="+ encodeURI(encodeURI($("#cname").val()))+"&offer="+ $("#type1	").val() +"&rl="+rl0+"&ck="+ck0;
+				} },
+			{ text: '取消', onclick: function (item, dialog) { dialog.hide(); } } ] });
+    }
+	
+	function f_display(data, rowindex, rowobj){
+		$.ligerDialog.open({ url:'order?action=display&edit=not&sid='+data.HideID,title:'查看订单',height: 600,width: 980,isResize: true,showMax:true, 
+			buttons: [
+			{ text: '关闭', onclick: function (item, dialog) { dialog.hide(); } } ] });
+	}
+	
+	
+    function f_findUser(uid){
+		location.href = '<%=jspName%>?id='+uid;
+    }
+    
+   function getReplace(str,ochar,nchar){ //ochar =  /\./g  == .
+		while(str.indexOf(ochar)!=-1)//寻找每一个中文逗号，并替换
+		{
+			str=str.replace(ochar,nchar);
+			 
+		}
+		return str;
+ 	}
+</script>
+<style type="text/css">
+           body{ font-size:12px;}
+        .l-table-edit {}
+        .l-table-edit-td{ padding:4px;}
+        .l-button-submit,.l-button-test{width:80px; float:left; margin-left:10px; padding-bottom:2px;}
+        .l-verify-tip{ left:230px; top:120px;}
+        #errorLabelContainer{ padding:10px; width:300px; border:1px solid #FF4466; display:none; background:#FFEEEE; color:Red;}
+    </style>	 
+</head>
+<body style="padding:0 2px 2px 2px;overflow:hidden;" >
+<form name="form1" method="post" id="form1">
+<textarea name="fb"  style="display:none" ></textarea>
+
+<div >
+<div id='grids' ></div></div>
+<div id="target1" style="display:none"   >
+  <table height="80" cellpadding="0" cellspacing="0" class="l-table-edit" >
+    <tr>
+  	  	<td width="59"   align="right" class="l-table-edit-td">开始日期:</td>
+    	<td width="128"   align="left" class="l-table-edit-td"><input type="text" id="stime" name="stime" /></td>
+    	<td colspan="2" align="right" class="l-table-edit-td">开始时间:</td>
+  	  	<td width="201"  colspan="2" align="left" class="l-table-edit-td"><input type="text" id="etime" name="etime" /></td>
+	</tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">订单号:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="sid" name="sid" value="<%=sid%>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">订单类型:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input name="type" type="text" id="type" ltype="text"  value="" /></td>
+    </tr> 
+    <tr>
+      <td align="right" class="l-table-edit-td">客户ID:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="clientid" name="clientid" value="<%=clientid%>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">公司名称:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="cname" name="cname" value="<%=cname%>" /></td>
+    </tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">创建工号:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="maker" name="maker" value="<%=maker%>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">供应商:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="offer" name="offer" value="<%=offer%>" /></td>
+    </tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">勾选过滤:</td>
+      <td align="left" class="l-table-edit-td"><div id="radiolist1" onclick="checkb()"></div></td>
+      <td colspan="2" align="right" class="l-table-edit-td">&nbsp;</td>
+      <td colspan="2" align="left" class="l-table-edit-td">&nbsp;</td>
+    </tr> 
+    <tr>
+      <td align="right" class="l-table-edit-td">&nbsp;</td>
+      <td colspan="5" align="left" class="l-table-edit-td"><div id="checkboxlist1"></div></td>
+      </tr> 
+    <tr>
+      <td align="right" class="l-table-edit-td">PNR:</td>
+      <td colspan="5" align="left" class="l-table-edit-td"><input type="text" id="pnr" name="pnr" value=""  ligerui="width:350" /></td>
+      </tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">票号:</td>
+      <td colspan="5" align="left" class="l-table-edit-td"><input type="text" id="piao" name="piao" value="" ligerui="width:350"  /></td>
+    </tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">注:</td>
+      <td colspan="5" align="left" class="l-table-edit-td">PNR和票号可以输入多个，中间用逗号隔开。</td>
+      </tr>
+  </table> 
+ </div>
+</form> 
+
+</body>
+</html>

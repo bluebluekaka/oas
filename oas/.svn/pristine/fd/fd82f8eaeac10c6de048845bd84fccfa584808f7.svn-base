@@ -1,0 +1,484 @@
+package com.oas.web.json;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.Config;
+import com.oas.common.DBCache;
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.common.Utils;
+import com.oas.objects.Customer;
+import com.oas.objects.FastOrder;
+import com.oas.objects.Order;
+import com.oas.objects.Query;
+import com.oas.util.StringUtil;
+
+public class FastOrderJson extends DataSourceAction {
+
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private Query query;
+	private FastOrder fastOrder;
+	private String workno;
+	private String clientid;
+	private Long fastOrderId;
+	private int autoAudit;
+	
+	private Customer customer;
+	
+	public Query getQuery() {
+		return query;
+	}
+	
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public String getWorkno() {
+		return workno;
+	}
+
+	public void setWorkno(String workno) {
+		this.workno = workno;
+	}
+
+	public String getClientid() {
+		return clientid;
+	}
+
+	public void setClientid(String clientid) {
+		this.clientid = clientid;
+	}
+
+	public FastOrder getFastOrder() {
+		return fastOrder;
+	}
+
+	public void setFastOrder(FastOrder fastOrder) {
+		this.fastOrder = fastOrder;
+	}
+
+	public Long getFastOrderId() {
+		return fastOrderId;
+	}
+
+	public void setFastOrderId(Long fastOrderId) {
+		this.fastOrderId = fastOrderId;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
+	}
+
+	public int getAutoAudit() {
+		return autoAudit;
+	}
+
+	public void setAutoAudit(int autoAudit) {
+		this.autoAudit = autoAudit;
+	}
+
+	public String execute() throws Exception {
+		try {
+			if (action != null) {
+				skip = SUCCESS;
+				String userid = (String) getSession().getAttribute(Config.USER_ID);
+				String workno = (String) getSession().getAttribute(Config.USER_WORKNO);
+				String usertype = (String) getSession().getAttribute(Config.USER_TYPE);
+				int utype = 1;
+				if(usertype!=null)
+					utype = Integer.valueOf(usertype);
+				if ("add".equals(action)) {
+					String orderid = "";
+					if(utype==Config.USER_TYPE_FINANCE_MANERGER||utype==Config.USER_TYPE_TOP_MANERGER){
+						
+						if(fastOrder.getType()==0){
+							orderid = "JP"+getOrderID(workno);
+						}else if(fastOrder.getType()==1){
+							orderid = "TP"+getOrderID(workno);
+						}
+						fastOrder.setState(2);
+					}
+					if(utype==Config.USER_TYPE_FINANCE){
+						fastOrder.setState(0);
+					}
+					fastOrder.setOrderid(orderid);
+					sql = "insert into fast_order" +
+							"(relaOrderId,customer_id,type,pnr" +
+							",creater,createtime,createtimei" +
+							",state,recmoney,paymoney,profit) values('"
+							+ fastOrder.getOrderid()
+							+ "','"
+							+ fastOrder.getClientid()
+							+ "',"+fastOrder.getType()+",'"
+							+ fastOrder.getPnr()
+							+ "','"
+							+ workno
+							+ "',"
+							+"'"+Utils.getNowTimestamp()+ "',"+Utils.getSystemMillis()+","+fastOrder.getState()+","+fastOrder.getRecmoney()+","+fastOrder.getPaymoney()+","+fastOrder.getProfit()+")";
+					System.out.println(sql);
+					executeUpdate(sql);
+					if(utype==Config.USER_TYPE_FINANCE_MANERGER||utype==Config.USER_TYPE_TOP_MANERGER){
+						//插入订单表
+						sql = "insert into orderinfo(orderid,state,type,producttype,productname,cid,pnr,recmoney,paymoney,profit,lasttime,lasttimei,userid,lastuser,createtime,createtimei,offercompany) values('"
+							+ fastOrder.getOrderid()
+							+ "',"
+							+ Config.ORDER_STATE_END
+							+ ","
+							+ fastOrder.getType()
+							+ ",0,'FO','"
+							+ fastOrder.getClientid()
+							+ "','"
+							+ fastOrder.getPnr()
+							+ "',"
+							+ fastOrder.getRecmoney()
+							+ ","
+							+ fastOrder.getPaymoney()
+							+ ","
+							+ fastOrder.getProfit()
+							+ ",'"
+							+ Utils.getNowTimestamp()
+							+ "',"
+							+ Utils.getSystemMillis()
+							+ ",'"
+							+ workno
+							+ "','"
+							+ workno
+							+ "','"
+							+ Utils.getNowTimestamp()
+							+ "',"
+							+Utils.getSystemMillis()
+							+ ",null)";
+					//						System.out.println(sql);
+					executeUpdate(sql);
+					markUserLogs("添加订单:" + fastOrder.getOrderid());
+					markOrderLogs(fastOrder);
+					//更新客户欠款
+					Double pa = fastOrder.getRecmoney();
+					if(fastOrder.getType()==1){
+						pa = -pa;
+					}
+					//插入客户款项记录表
+					sql = "insert into customer_amount_logs (customer_id,rela_id" +
+					",type,residualValueOld,residualValueNew,paid_amount_old" +
+					",paid_amount_new,lasttime,lasttimei,cmnt) " +
+					"select c.customerID,'"+fastOrder.getOrderid()+"'" +
+					",8,c.residualValue,c.residualValue" +
+					",c.paid_amount,c.paid_amount- ("+pa+"),'"+Utils.getNowTimestamp()+ "',"+Utils.getSystemMillis()+",'出票欠款："+pa+"' " +
+					"FROM customer c WHERE c.customerID = '"+fastOrder.getClientid()+"' ";
+					executeUpdate(sql);
+					
+					sql = "update customer set paid_amount = paid_amount - ("+pa+")  where customerID = '"+fastOrder.getClientid()+"'";
+					executeUpdate(sql);
+					
+					//插入财务单表
+					markFinancial(fastOrder, 0, fastOrder.getProfit());
+					}
+				}else if ("delete".equals(action)) {
+					sql = "delete from fast_order where fast_order_id = " + fastOrderId + "";
+					executeUpdate(sql);
+				} else if ("change".equals(action)) {
+//					sql = "update customer_transfer set customer_id='"+transfer.getCustomerId()+"',transfer_account='" + transfer.getTransferAccount() + "'"
+//					+ ",transfer_amount="
+//					+ transfer.getTransferAmount() + ",transfer_type="
+//					+ transfer.getTransferType() + ",remark='"
+//					+ transfer.getRemark() +"',last_user='"
+//					+ workno +"',last_operate_time='"
+//					+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+//					+ Utils.getSystemMillis()+"'"
+//					+ " where transfer_id = "+transfer.getTransferId();
+//					executeUpdate(sql);
+				} else if ("display".equals(action)) {
+					sql = "SELECT fo.fast_order_id,fo.relaOrderId,fo.customer_id" +
+							",fo.type,fo.pnr,fo.state,fo.recmoney,fo.paymoney,fo.profit" +
+							",c.company,c.name,c.phone,c.QQ,c.residualValue,c.paid_amount" +
+							" FROM fast_order fo" +
+							" LEFT JOIN customer c on fo.customer_id = c.customerID" +
+							" where 1=1" +
+							" and fo.fast_order_id = "+ fastOrderId + "";
+					executeQuery(sql);
+					if (rs.next()) {
+						fastOrderId = rs.getLong("fast_order_id");
+						fastOrder.setOrderid(rs.getString("relaOrderId"));
+						fastOrder.setClientid(rs.getString("customer_id"));
+						fastOrder.setType(rs.getInt("type"));
+						fastOrder.setState(rs.getInt("state"));
+						fastOrder.setPnr(rs.getString("pnr"));
+						fastOrder.setRecmoney(rs.getDouble("recmoney"));
+						fastOrder.setPaymoney(rs.getDouble("paymoney"));
+						fastOrder.setProfit(rs.getDouble("profit"));
+
+						Customer c = new Customer();
+						c.setCompany(rs.getString("company"));
+						c.setName(rs.getString("name"));
+						c.setQq(rs.getString("QQ"));
+						c.setPhone(rs.getString("phone"));
+						c.setResidualValue(rs.getFloat("residualValue"));
+						c.setPaidAmount(rs.getFloat("paid_amount"));
+						this.customer = c;
+						skip = EDIT;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + fastOrderId + " not exists");
+					}
+				}else if ("sm".equals(action)) {
+					sql = "update fast_order set state=1,lastuser='"
+					+ workno +"',lasttime='"
+					+ Utils.getNowTimestamp()+ "',lasttimei='"
+					+ Utils.getSystemMillis()+ "' "
+					+ " where fast_order_id in ("+fastOrder.getFastOrderIds()+")";
+					System.out.println(sql);
+					executeUpdate(sql);
+					queryList();
+				}else if ("audit".equals(action)) {
+					String[] fastOrderIds = fastOrder.getFastOrderIds().split(",");
+					for(String fastOrderId : fastOrderIds){
+						FastOrder fastOrderNew = new FastOrder();
+						sql = "select * from fast_order where fast_order_id = "+fastOrderId+"";
+						executeQuery(sql);
+						int type = 0;
+						while (rs.next()) {
+							type = rs.getInt("relaOrderId");
+							String pnr = rs.getString("pnr");
+							Float recmoney = rs.getFloat("recmoney");
+							Float paymoney = rs.getFloat("paymoney");
+							Float profit = rs.getFloat("profit");
+							String customerId = rs.getString("customer_id");
+							int type1 = rs.getInt("type");
+							fastOrderNew.setType(type1);
+							fastOrderNew.setClientid(customerId);
+							fastOrderNew.setPnr(pnr);
+							fastOrderNew.setRecmoney(recmoney);
+							fastOrderNew.setPaymoney(paymoney);
+							fastOrderNew.setProfit(profit);
+						}
+						String orderid = "";
+						if(type==0){
+							orderid = "JP"+getOrderID(workno);
+						}else if(type==1){
+							orderid = "TP"+getOrderID(workno);
+						}
+						
+						fastOrderNew.setOrderid(orderid);
+						sql = "update fast_order set relaOrderId = '"+orderid+"',state="+fastOrder.getState()+",lastuser='"
+						+ workno +"',lasttime='"
+						+ Utils.getNowTimestamp()+ "',lasttimei='"
+						+ Utils.getSystemMillis()+ "' "
+						+ " where fast_order_id = "+fastOrderId+" ";
+						System.out.println(sql);
+						executeUpdate(sql);
+						//插入订单表
+						sql = "insert into orderinfo(orderid,state,type,producttype,productname,cid,pnr,recmoney,paymoney,lasttime,lasttimei,userid,lastuser,createtime,createtimei,offercompany) values('"
+							+ fastOrderNew.getOrderid()
+							+ "',"
+							+ Config.ORDER_STATE_END
+							+ ","
+							+ fastOrderNew.getType()
+							+ ",0,'FO','"
+							+ fastOrderNew.getClientid()
+							+ "','"
+							+ fastOrderNew.getPnr()
+							+ "',"
+							+ fastOrderNew.getRecmoney()
+							+ ","
+							+ fastOrderNew.getPaymoney()
+							+ ",'"
+							+ Utils.getNowTimestamp()
+							+ "',"
+							+ Utils.getSystemMillis()
+							+ ",'"
+							+ workno
+							+ "','"
+							+ workno
+							+ "','"
+							+ Utils.getNowTimestamp()
+							+ "',"
+							+Utils.getSystemMillis()
+							+ ",null)";
+					//						System.out.println(sql);
+					executeUpdate(sql);
+					markUserLogs("添加订单:" + fastOrderNew.getOrderid());
+					markOrderLogs(fastOrderNew);
+					//更新客户欠款
+					Double pa = fastOrderNew.getRecmoney();
+					if(fastOrderNew.getType()==1){
+						pa = -pa;
+					}
+					//插入客户款项记录表
+					sql = "insert into customer_amount_logs (customer_id,rela_id" +
+					",type,residualValueOld,residualValueNew,paid_amount_old" +
+					",paid_amount_new,lasttime,lasttimei,cmnt) " +
+					"select c.customerID,'"+fastOrderNew.getOrderid()+"'" +
+					",8,c.residualValue,c.residualValue" +
+					",c.paid_amount,c.paid_amount- ("+pa+"),'"+Utils.getNowTimestamp()+ "',"+Utils.getSystemMillis()+",'出票欠款："+pa+"' " +
+					"FROM customer c WHERE c.customerID = '"+fastOrderNew.getClientid()+"' ";
+					System.out.println(sql);
+					executeUpdate(sql);
+					
+					sql = "update customer set paid_amount = paid_amount - ("+pa+")  where customerID = '"+fastOrderNew.getClientid()+"'";
+					System.out.println(sql);
+					executeUpdate(sql);
+					
+					//插入财务单表
+					markFinancial(fastOrderNew, 0, fastOrderNew.getProfit());
+					}
+					queryList();
+				}
+				
+			} else {
+				queryList();
+			}
+		} catch (Exception e) {
+			skip = ERROR;
+			addActionError(e.toString());
+			e.printStackTrace();
+		} finally {
+			closeConnection();
+		}
+		
+			
+		return skip;
+	}
+	
+	public void queryList() throws Exception{
+		term = Helper.getQuerySqlNull(query, "fo.createtimei");
+
+		skip = JSON;
+		String sqlStr = "SELECT fo.fast_order_id,fo.relaOrderId,fo.customer_id,fo.type,fo.pnr" +
+				",fo.createtime,fo.createtimei,fo.creater,fo.lasttime,fo.lasttimei,fo.lastuser" +
+				",fo.state,fo.recmoney,fo.paymoney,fo.profit,u1.name userName,u2.name luserName" +
+				",c.company,c.name,c.phone,c.QQ,c.residualValue,c.paid_amount" +
+				" FROM fast_order fo" +
+				" LEFT JOIN customer c on fo.customer_id = c.customerID" +
+				" left join user u1 on fo.creater = u1.workcardno" +
+				" left join user u2 on fo.lastuser = u2.workcardno" +
+				" where 1=1 " + term;
+		
+		sqlStr += " order by fo.fast_order_id desc";
+		System.out.println(sqlStr);
+		executeQuery(sqlStr);
+		while (rs.next()) {
+			Long fastOrderId = rs.getLong("fast_order_id");
+			String relaOrderId = rs.getString("relaOrderId");
+			String pnr = rs.getString("pnr");
+			Float recmoney = rs.getFloat("recmoney");
+			Float paymoney = rs.getFloat("paymoney");
+			Float profit = rs.getFloat("profit");
+			String customerId = rs.getString("customer_id");
+			int type = rs.getInt("type");
+			int state = rs.getInt("state");
+			String name = rs.getString("name");
+			String company = rs.getString("company");
+			String user = StringUtil.toString(rs.getString("creater"));
+			String luser = StringUtil.toString(rs.getString("lastuser"));
+			String userName = StringUtil.toString(rs.getString("userName"));
+			String luserName = StringUtil.toString(rs.getString("luserName"));
+			String createTime = StringUtil.toString(rs.getDate("createtime"))+" "+StringUtil.toString(rs.getTime("createtime"));
+			String updateTime = StringUtil.toString(rs.getDate("lasttime"))+" "+StringUtil.toString(rs.getTime("lasttime"));
+			if (count != 0)
+				bf.append(",");
+			bf.append("{'fastOrderId':'" + fastOrderId + "'")
+			  .append(",'relaOrderId':'" + relaOrderId + "'")
+			  .append(",'pnr':'" + pnr + "'")
+			  .append(",'type':'" + type + "'")
+			  .append(",'state':'" + state + "'")
+			  .append(",'recmoney':'" + recmoney + "'")
+			  .append(",'paymoney':'" + paymoney + "'")
+			  .append(",'profit':'" + profit + "'")
+			  .append(",'user':'" + user + "'")
+			  .append(",'userName':'" + userName + "'")
+			  .append(",'createTime':'" + createTime + "'")
+			  .append(",'customerId':'" + customerId + "'")
+			  .append(",'name':'" + name + "'")
+			  .append(",'company':'" + company + "'")
+			  .append(",'luser':'" + luser + "'")
+			  .append(",'luserName':'" + luserName + "'")
+			  .append(",'updateTime':'" + updateTime + "'}");
+			count++;
+		}
+		String counts = "总数：" + count;
+		tojsonNew(counts);
+	}
+	
+	protected String getOrderID(String carno) throws Exception {
+		String date = Utils.getNowDate();
+		int num = 1;
+		sql = "select orderid from orderinfo where userid='" + carno + "' and date(createtime)=date('" + date
+				+ "') order by id desc limit 0,1";
+		executeQuery(sql);
+		if (rs.next()) {
+			String ono = rs.getString(1);
+			if("null".equals(ono)){
+				return carno + date.replaceAll("-", "").substring(2)+"001";
+			}
+			int t = Integer.valueOf(ono.substring(ono.length() - 3));
+			num = t + 1;
+		}
+		String states = carno + date.replaceAll("-", "").substring(2);
+		if (num < 10) {
+			states += "00" + num;
+		} else if (num < 100) {
+			states += "0" + num;
+		} else {
+			states += num;
+		}
+		return states;
+	}
+	
+	protected void markOrderLogs(FastOrder fastOrder2) {
+		String userid = (String) getSessionAttribute(Config.USER_ID);
+		sql = "insert into orderlogs(orderid,state,type,producttype,productname,cid,pnr,recmoney,paymoney,lasttime,lasttimei,lastuser) values('"
+				+ fastOrder2.getOrderid()
+				+ "',"
+				+ fastOrder2.getState()
+				+ ","
+				+ fastOrder2.getType()
+				+ ","
+				+ fastOrder2.getProducttype()
+				+ ",'"
+				+ fastOrder2.getProductname()
+				+ "','"
+				+ fastOrder2.getClientid()
+				+ "','"
+				+ fastOrder2.getPnr()
+				+ "',"
+				+ fastOrder2.getRecmoney()
+				+ ","
+				+ fastOrder2.getPaymoney()
+				+ ",'"
+				+ Utils.getNowTimestamp()
+				+ "',"
+				+ Utils.getSystemMillis() + ",'" + userid + "')";
+		executeUpdate(sql);
+	}
+	
+	protected void markFinancial(FastOrder order, int fstate, double profit) throws Exception {
+		//		String userid = (String) getSessionAttribute(Config.USER_WORKNO);
+		sql = "select order_code from financial_order where order_code = '" + order.getOrderid() + "'";
+		executeQuery(sql);
+		if (rs.next()) {
+			sql = "update financial_order set order_state= " + fstate + " where order_code ='" + order.getOrderid()
+					+ "'";
+			executeUpdate(sql);
+		} else {
+			if (fstate == 0) {
+				sql = "insert into financial_order(order_code,order_state,creater,create_time,create_timei,adjust_amounts,adjust_profit,received_amount,received_state,audit_state ) values('"
+						+ order.getOrderid()
+						+ "',"
+						+ fstate
+						+ ",'"
+						+ order.getOrderid().substring(2, 5)
+						+ "','"
+						+ Utils.getNowTimestamp() + "'," + Utils.getSystemMillis() + ",0," + profit + ",0,0,-1)";
+				executeUpdate(sql);
+			}
+		}
+		Thread.sleep(100);
+	}
+	
+}

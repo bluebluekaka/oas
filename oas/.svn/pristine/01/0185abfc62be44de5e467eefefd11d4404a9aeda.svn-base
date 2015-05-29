@@ -1,0 +1,443 @@
+package com.oas.web.json;
+
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.objects.Customer;
+import com.oas.objects.Financial;
+import com.oas.objects.Order;
+import com.oas.objects.Query;
+import com.oas.objects.User;
+import com.oas.util.StringUtil;
+
+public class QueryJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private String moduleName;
+	private String id;
+	private Query query;
+	private Order order;
+	private Customer customer;
+	private User user;
+	private Financial financial;
+
+	public String getModuleName() {
+		return moduleName;
+	}
+
+	public void setModuleName(String moduleName) {
+		this.moduleName = moduleName;
+	}
+
+	public Order getOrder() {
+		return order;
+	}
+
+	public void setOrder(Order order) {
+		this.order = order;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	public Query getQuery() {
+		return query;
+	}
+
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public Financial getFinancial() {
+		return financial;
+	}
+
+	public void setFinancial(Financial financial) {
+		this.financial = financial;
+	}
+
+	public String execute() throws Exception {
+		String ssss = "";
+		try {
+//			if (action != null) {
+				if(moduleName!=null){
+					List<Map<String,String>> dList = new ArrayList<Map<String,String>>();
+					skip = JSON;
+					String counts = "";
+					if("customer".equals(moduleName)){
+						sql = "select c.customerID,c.company,c.name,c.phone,c.QQ,c.residualValue,u.name salesman,paid_amount" +
+								" from customer c,user u" +
+								" where 1=1 and c.operator = u.workcardno ";
+						if(user!=null&&!"".equals(user.getName())){
+							String userName = URLDecoder.decode(user.getName(),"UTF-8");
+							sql += " and u.name like '%"+userName+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getCustomerID())){
+							sql += " and c.customerID ='"+customer.getCustomerID()+"'";
+						}
+						if(customer!=null&&!"".equals(customer.getName())){
+							String name = URLDecoder.decode(customer.getName(),"UTF-8");
+							sql += " and c.name like '%"+name+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getCompany())){
+							String company = URLDecoder.decode(customer.getCompany(),"UTF-8");
+							sql += " and c.company like '%"+company+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getPhone())){
+							sql += " and c.phone like '"+customer.getPhone()+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getQq())){
+							sql += " and c.QQ like '"+customer.getQq()+"%'";
+						}
+//						System.out.println(sql);
+						executeQuery(sql);
+						while (rs.next()) {
+							String customerid=rs.getString("customerID");
+							String name=rs.getString("name");
+							String phone=rs.getString("phone");
+							String QQ=rs.getString("QQ");
+							String residualValue=rs.getString("residualValue");
+							String company=rs.getString("company");
+							String salesman=rs.getString("salesman");
+							String paidAmount = rs.getString("paid_amount");
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'customerid':'" + customerid)
+									.append("','name':'" + name)
+									.append("','phone':'" + phone)
+									.append("','qq':'" + QQ)
+									.append("','residualValue':'" + residualValue)
+									.append("','paidAmount':'" + paidAmount)
+									.append("','salesman':'" + salesman)
+									.append("','company':'" + company+"'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}else if("order".equals(moduleName)){
+						term = Helper.getQuerySqlNull(query, "lasttimei");
+//						if (Config.USER_TYPE_COMMON == Integer.valueOf(usertype)) {
+//							term += " and userid='" + userid + "'";
+//						}
+						sql = "select id,orderid,state,type,producttype,productname,cid,pnr,recmoney,paymoney,lasttime,cmnt,userid,lastuser,profit from orderinfo where 1=1 ";
+						if(order!=null&&order.getType()!=99){
+							sql += " and type ="+order.getType()+"";
+						}
+						sql +=	term + "  order by id";
+//						System.out.println(sql);
+						executeQuery(sql);
+						while (rs.next()) {
+							String orderid = rs.getString("orderid");
+							String state = Helper.getOrterState1(rs.getInt("state"));
+							String type = Helper.getOrderType(rs.getInt("type"));
+							String producttype = Helper.getProductType(rs.getInt("producttype"));
+							String productname = rs.getString("productname");
+							String clientid = rs.getString("cid");
+							String pnr = rs.getString("pnr");
+							float recmoney = rs.getFloat("recmoney");
+							float paymoney = rs.getFloat("paymoney");
+//							String date = rs.getDate("lasttime") + "";
+							String lastTime = StringUtil.toString(rs.getDate("lasttime"))+" "+StringUtil.toString(rs.getTime("lasttime"));
+//							String ltime = rs.getTime("lasttime") + "";
+							String user = rs.getString("userid");
+							String luser = StringUtil.toString(rs.getString("lastuser"));
+							String profit = rs.getString("profit");
+						
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'orderid':'" + orderid)
+									.append("','type':'" + type)
+									.append("','state':'" + state)
+									.append("','pnr':'"+pnr.trim()+"',")
+									.append("'recmoney':'" + recmoney)
+									.append("','producttype':'" + producttype)
+									.append("','productname':'" + productname)
+									.append("','paymoney':'" + paymoney)
+									.append("','profit':'" + profit)
+									.append("','clientid':'" + clientid)
+									.append("','user':'" + user)
+									.append("','lastTime':'" + lastTime)
+									.append("','luser':'" + luser+ "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}else if("financial".equals(moduleName)){
+						term = Helper.getQuerySqlNull(query, "lasttimei");
+//						if (Config.USER_TYPE_COMMON == Integer.valueOf(usertype)) {
+//							term += " and userid='" + userid + "'";
+//						}
+						sql = "SELECT fo.financial_order_code,fo.order_code" +
+								",fo.adjust_profit,oi.type,oi.pnr,oi.recmoney,oi.paymoney" +
+								",fo.order_state,fo.received_amount,fo.received_state,fo.audit_state" +
+								",fo.creater,fo.create_time,fo.last_user,fo.last_operate_time" +
+								" FROM financial_order fo,orderinfo oi " +
+								" where 1=1 and fo.order_code = oi.orderid and fo.order_state = 0 and fo.received_state in (0,2) ";
+//						if(order.getType()!=99){
+//							sql += " and type ="+order.getType()+"";
+//						}
+//						if(order!=null&&(order.getType()!=99||order.getPnr()!=null||order.getOrderid()!=null)){
+//							if(order.getOrderid()!=null&&!"".equals(order.getOrderid())){
+//								sql += " and oi.orderid like '%"+order.getOrderid()+"%' ";
+//							}
+//							if(order.getPnr()!=null&&!"".equals(order.getPnr())){
+//								sql += " and oi.pnr like '%"+order.getPnr()+"%' ";
+//							}
+//							if(order.getType()!=99){
+//								sql += " and oi.type ="+order.getType()+"";
+//							}
+//						}
+//						
+						if(customer!=null&&!"".equals(customer.getCustomerID())){
+							sql += " and oi.cid ='"+customer.getCustomerID()+"' ";
+						}
+						sql +=	term + "  order by fo.financial_order_code desc";
+//						System.out.println(sql);
+						executeQuery(sql);
+						float recmoneys = 0;
+						float paymoneys = 0;
+						float adjustProfits = 0;
+						float receivedAmounts = 0;
+						while (rs.next()) {
+							Long financialOrderCode = rs.getLong("financial_order_code");
+							String orderCode = rs.getString("order_code");
+							String pnr = rs.getString("pnr");
+							Float recmoney = rs.getFloat("recmoney");
+							Float paymoney = rs.getFloat("paymoney");
+							Float adjustProfit = rs.getFloat("adjust_profit");
+							Float receivedAmount = rs.getFloat("received_amount");
+							int orderType = rs.getInt("type");
+
+							recmoneys += Float.valueOf(recmoney);
+							paymoneys += Float.valueOf(paymoney);
+							adjustProfits += Float.valueOf(adjustProfit);
+							receivedAmounts += Float.valueOf(receivedAmount);
+							int receiveState = rs.getInt("received_state");
+							int orderState = rs.getInt("order_state");
+							int auditState = rs.getInt("audit_state");
+							String creater = StringUtil.toString(rs.getString("creater"));
+							String operator = StringUtil.toString(rs.getString("last_user"));
+							String createTime = StringUtil.toString(rs.getDate("create_time"))+" "+StringUtil.toString(rs.getTime("create_time"));
+							String updateTime = StringUtil.toString(rs.getDate("last_operate_time"))+" "+StringUtil.toString(rs.getTime("last_operate_time"));
+//							dList.add(map); 
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'financialOrderCode':'" + financialOrderCode)
+									.append("','orderCode':'" + orderCode)
+									.append("','pnr':'" + pnr)
+									.append("','recmoney':'" + recmoney)
+									.append("','paymoney':'" + paymoney)
+									.append("','adjustProfit':'" + adjustProfit)
+									.append("','receivedAmount':'" + receivedAmount)
+									.append("','receiveState':'" + receiveState)
+									.append("','orderType':'" + orderType)
+									.append("','orderState':'" + orderState)
+									.append("','auditState':'" + auditState)
+									.append("','creater':'" + creater)
+									.append("','operator':'" + operator)
+									.append("','createTime':'" + createTime)
+									.append("','updateTime':'" + updateTime+ "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count+", 总应收款：" + recmoneys + " , 总应付款：" + paymoneys + " , 总校正利润：" + adjustProfits+" ,总收款：" + receivedAmounts;
+						tojsonNew(counts);
+					}else if("transferAccount".equals(moduleName)){
+						sql = "select DISTINCT ct.transfer_account from customer_transfer ct";
+						executeQuery(sql);
+						while (rs.next()) {
+							String transferAccount = rs.getString("transfer_account");
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'transferAccount':'" + transferAccount+"'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}else if("transfer".equals(moduleName)){
+						String sqlStr = "select ct.transfer_id,ct.customer_id,ct.transfer_account,ct.transfer_amount" +
+						",ct.remark,ct.transfer_type,ct.transfer_state,ct.usable_amount,ct.creater,ct.create_time,ct.last_user" +
+						",ct.last_operate_time,u1.name userName,u2.name luserName,c.name,c.company" +
+//						",case Group_concat(tfor.financial_order_code SEPARATOR ',') when '' then null else Group_concat(tfor.financial_order_code SEPARATOR ',') end  as orderCodes" +
+						" from customer_transfer ct" +
+//						" left join transfer_financial_order_rela tfor on ct.transfer_id = tfor.transfer_id" +
+						" left join user u1 on ct.creater = u1.workcardno" +
+						" left join user u2 on ct.last_user = u2.workcardno" +
+						" left join customer c on c.customerID = ct.customer_id" +
+						" where 1=1 " + term;
+						sqlStr += " and ct.customer_id = '"+customer.getCustomerID()+"' and ct.transfer_state = 2 and ct.usable_state in (0)";
+//						System.out.println(sqlStr);
+						executeQuery(sqlStr);
+						while (rs.next()) {
+							Long transferId = rs.getLong("transfer_id");
+							String customerId = rs.getString("customer_id");
+							Float transferAmount = rs.getFloat("transfer_amount");
+							Float usableAmount = rs.getFloat("usable_amount");
+							amount += transferAmount;
+							String transferAccount = rs.getString("transfer_account");
+							String remark = rs.getString("remark");
+							int transferType = rs.getInt("transfer_type");
+							int transferState = rs.getInt("transfer_state");
+							String orderCodes = "";
+//							String orderCodes = rs.getString("orderCodes");
+							String customerName = rs.getString("name");
+							String company = rs.getString("company");
+							String creater = StringUtil.toString(rs.getString("creater"));
+							String operator = StringUtil.toString(rs.getString("last_user"));
+							String userName = StringUtil.toString(rs.getString("userName"));
+							String luserName = StringUtil.toString(rs.getString("luserName"));
+							String createTime = StringUtil.toString(rs.getDate("create_time"))+" "+StringUtil.toString(rs.getTime("create_time"));
+							String updateTime = StringUtil.toString(rs.getDate("last_operate_time"))+" "+StringUtil.toString(rs.getTime("last_operate_time"));
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'transferId':'" + transferId + "'")
+							  .append(",'customerId':'" + customerId + "'")
+							  .append(",'transferAmount':'" + transferAmount + "'")
+							  .append(",'usableAmount':'" + usableAmount + "'")
+							  .append(",'transferType':'" + transferType + "'")
+							  .append(",'transferAccount':'" + transferAccount + "'")
+							  .append(",'customerName':'" + customerName + "'")
+							  .append(",'company':'" + company + "'")
+							  .append(",'remark':'" + remark + "'")
+							  .append(",'orderCodes':'" + orderCodes + "'")
+							  .append(",'transferState':'" + transferState + "'")
+							  .append(",'luserName':'" + luserName + "'")
+							  .append(",'userName':'" + userName + "'")
+							  .append(",'creater':'" + creater + "'")
+							  .append(",'createTime':'" + createTime + "'")
+							  .append(",'operator':'" + operator + "'")
+							  .append(",'updateTime':'" + updateTime + "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count+" ,总转账金额："+amount;
+						tojsonNew(counts);
+					}else if("transferRela".equals(moduleName)){
+						String sqlStr = "select ct.transfer_id,ct.transfer_account" +
+								",ct.transfer_amount,ct.create_time" +
+								",tfor.offset_financial_amounts " +
+								" from transfer_financial_order_rela tfor" +
+								",financial_order fo,orderinfo o,customer_transfer ct,offset os " +
+								" where tfor.financial_order_code = fo.financial_order_code " +
+								" and fo.order_code = o.orderid and tfor.transfer_id = ct.transfer_id" +
+								" and os.offset_id = tfor.offset_id and os.offset_state = 0 ";
+						if(order!=null&&order.getOrderid()!=null&&!"".equals(order.getOrderid())){
+							sqlStr += " and o.orderid = '"+order.getOrderid()+"'";
+						}
+						if(financial!=null&&financial.getFinancialOrderCode()!=null&&financial.getFinancialOrderCode()!=0){
+							sqlStr += " and fo.financial_order_code = "+financial.getFinancialOrderCode()+"";
+						}	
+						
+//						System.out.println(sqlStr);
+						executeQuery(sqlStr);
+						while (rs.next()) {
+							Long transferId = rs.getLong("transfer_id");
+							String transferAccount = rs.getString("transfer_account");
+							Float transferAmount = rs.getFloat("transfer_amount");
+							Float offsetFinancialAmounts = rs.getFloat("offset_financial_amounts");
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'transferId':'" + transferId + "'")
+							  .append(",'transferAmount':'" + transferAmount + "'")
+							  .append(",'transferAccount':'" + transferAccount + "'")
+							  .append(",'offsetFinancialAmounts':'" + offsetFinancialAmounts + "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count+" ,总转账金额："+amount;
+						tojsonNew(counts);
+					}else if("balance".equals(moduleName)){
+						term = Helper.getQuerySqlNull(query, "lasttimei");
+						sql = "select c.customerID,c.name,c.company,c.residualValue,c.paid_amount,t1.transfer_amounts,t1.usable_amounts,t2.recmoney5,t2.recmoney11,IFNULL(t2.recmoney5,0)+IFNULL(t2.recmoney11,0) order_recmoneys,t3.recmoneys,t3.received_amounts,-(IFNULL(t2.recmoney5,0)+IFNULL(t2.recmoney11,0))+IFNULL(t3.received_amounts,0) paid_compare_amounts from customer c LEFT JOIN (select ct.customer_id,SUM(ct.transfer_amount) transfer_amounts,SUM(ct.usable_amount) usable_amounts from customer_transfer ct where ct.state=0 GROUP BY ct.customer_id) t1 on c.customerID = t1.customer_id LEFT JOIN (SELECT "+
+	" t.cid,sum(CASE t.state WHEN 5 THEN t.recmoneys ELSE 0 END) AS recmoney5, "+
+	" sum(CASE t.state WHEN 11 THEN t.recmoneys ELSE 0 END) AS recmoney11 FROM "+
+	" (SELECT sum(oi.recmoney) recmoneys,oi.cid,oi.state FROM orderinfo oi WHERE oi.state IN (5, 11) "+
+		" GROUP BY oi.cid,oi.state) t "+
+" GROUP BY t.cid ) t2 on c.customerID = t2.cid LEFT JOIN (SELECT oi.cid,sum(oi.recmoney) recmoneys,SUM(fo.received_amount) received_amounts from financial_order fo,orderinfo oi where fo.order_code = oi.orderid and fo.order_state = 0 GROUP BY oi.cid) t3 on c.customerID = t3.cid WHERE c.state !=3";
+												
+						if(customer!=null&&!"".equals(customer.getCustomerID())){
+							sql += " and c.customerID ='"+customer.getCustomerID()+"' ";
+						}
+						sql +=	term + "  order by c.customerID desc";
+						System.out.println(sql);
+						executeQuery(sql);
+						while (rs.next()) {
+							String customerID = rs.getString("customerID");
+							String name = rs.getString("name");
+							String company = rs.getString("company");
+							
+							Float residualValue = rs.getFloat("residualValue");
+							Float paidAmount = rs.getFloat("paid_amount");
+							Float transferAmounts = rs.getFloat("transfer_amounts");
+							Float usableAmounts = rs.getFloat("usable_amounts");
+							Float recmoney5 = rs.getFloat("recmoney5");
+							Float recmoney11 = rs.getFloat("recmoney11");
+							Float recmoneys = rs.getFloat("recmoneys");
+							Float receivedAmounts = rs.getFloat("received_amounts");
+							Float orderRecmoneys = rs.getFloat("order_recmoneys");
+							Float paidCompareAmounts = rs.getFloat("paid_compare_amounts");
+							
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'customerID':'" + customerID)
+									.append("','name':'" + name)
+									.append("','company':'" + company)
+									.append("','residualValue':'" + residualValue)
+									.append("','paidAmount':'" + paidAmount)
+									.append("','transferAmounts':'" + transferAmounts)
+									.append("','usableAmounts':'" + usableAmounts)
+									.append("','recmoney5':'" + recmoney5)
+									.append("','recmoney11':'" + recmoney11)
+									.append("','orderRecmoneys':'" + orderRecmoneys)
+									.append("','recmoneys':'" + recmoneys)
+									.append("','paidCompareAmounts':'" + paidCompareAmounts)
+									.append("','receivedAmounts':'" + receivedAmounts+ "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}
+				}
+				
+		} catch (Exception e) {
+			skip = ERROR;
+			e.printStackTrace();
+			addActionError(e.toString());
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+}

@@ -1,0 +1,201 @@
+package com.oas.web.json;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.Config;
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.common.Utils;
+import com.oas.objects.Order;
+import com.oas.objects.OrderOffset;
+import com.oas.objects.Query;
+import com.oas.util.StringUtil;
+
+public class OrderOffsetJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private Query query;
+	private Order order;
+	private OrderOffset orderOffset;
+	private int type;
+
+	public Query getQuery() {
+		return query;
+	}
+
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public OrderOffset getOrderOffset() {
+		return orderOffset;
+	}
+
+	public void setOrderOffset(OrderOffset orderOffset) {
+		this.orderOffset = orderOffset;
+	}
+
+	public int getType() {
+		return type;
+	}
+
+	public void setType(int type) {
+		this.type = type;
+	}
+
+	public Order getOrder() {
+		return order;
+	}
+
+	public void setOrder(Order order) {
+		this.order = order;
+	}
+
+	public String execute() throws Exception {
+		try {
+			String counts = "";
+			if (action != null) {
+//				String usertype = (String) getSession().getAttribute(Config.USER_TYPE);
+				String workno = (String) getSession().getAttribute(Config.USER_WORKNO);
+//				String userid = (String) getSession().getAttribute(Config.USER_ID);
+				skip = SUCCESS;
+				if ("add".equals(action)) {
+					orderOffset.setCreater(workno);
+					sql = "insert into order_offset_info" +
+							"(order_code,return_amount,offset_orders" +
+							",all_offset_amount,balance,creater" +
+							",create_time,create_timei) values('"
+							+ orderOffset.getOrderCode()
+							+ "',"
+							+ orderOffset.getReturnAmount()
+							+ ",'"
+							+ orderOffset.getOffsetOrders()
+							+ "',"
+							+ orderOffset.getAllOffsetAmount()
+							+ ",'"
+							+ orderOffset.getBalance()
+							+ "','"
+							+ orderOffset.getCreater()
+							+ "',"
+							+"'"+Utils.getNowTimestamp()+ "',"+Utils.getSystemMillis()+")";
+					executeUpdate(sql);
+				} else if ("delete".equals(action)) {
+					sql = "delete from order_offset_info where order_offset_code in(" + orderOffset.getOrderOffsetCodes() + ")";
+					executeUpdate(sql);
+				} else if ("change".equals(action)) {
+					sql = "update order_offset_info set order_code='" + orderOffset.getOrderCode() + "'"
+							+ ",return_amount="
+							+ orderOffset.getReturnAmount() + ",offset_orders='"
+							+ orderOffset.getOffsetOrders() + "',all_offset_amount="
+							+ orderOffset.getAllOffsetAmount() + ",balance="
+							+ orderOffset.getBalance() + ",last_user='"
+							+ workno +"',last_operate_time='"
+							+ Utils.getNowTimestamp()+ "',last_operate_timei='"
+							+Utils.getSystemMillis()+"'"
+							+ " where order_offset_code = "+orderOffset.getOrderOffsetCode();
+					executeUpdate(sql);
+				} else if ("display".equals(action)) {
+					sql = "select order_code,return_amount,offset_orders,all_offset_amount,balance from order_offset_info where order_offset_code = "
+							+ orderOffset.getOrderOffsetCode() + "";
+					executeQuery(sql);
+					if (rs.next()) {
+						OrderOffset oo = new OrderOffset();
+						oo.setOrderOffsetCode(orderOffset.getOrderOffsetCode());
+						oo.setOrderCode(rs.getString("order_code"));
+						oo.setReturnAmount(rs.getFloat("return_amount"));
+						oo.setOffsetOrders(rs.getString("offset_orders"));
+						oo.setAllOffsetAmount(rs.getFloat("all_offset_amount"));
+						oo.setBalance(rs.getFloat("balance"));
+						this.orderOffset = oo;
+						skip = EDIT;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + orderOffset.getOrderOffsetCode() + " not exists");
+					}
+				} else if ("view".equals(action)) {
+					sql = "select order_code,return_amount,offset_orders,all_offset_amount,balance from order_offset_info where order_offset_code = "
+						+ orderOffset.getOrderOffsetCode() + "";
+				executeQuery(sql);
+				if (rs.next()) {
+					OrderOffset oo = new OrderOffset();
+					oo.setOrderOffsetCode(orderOffset.getOrderOffsetCode());
+					oo.setOrderCode(rs.getString("order_code"));
+					oo.setReturnAmount(rs.getFloat("return_amount"));
+					oo.setOffsetOrders(rs.getString("offset_orders"));
+					oo.setAllOffsetAmount(rs.getFloat("all_offset_amount"));
+					oo.setBalance(rs.getFloat("balance"));
+					this.orderOffset = oo;
+					skip = VIEW;
+				} else {
+					skip = ERROR;
+					addActionError("Reason:  " + orderOffset.getOrderOffsetCode() + " not exists");
+				}
+			}
+			} else {
+				term = Helper.getQuerySqlNull(query, "ooi.create_timei");
+
+				skip = JSON;
+				String sqlStr = "select ooi.order_offset_code,ooi.order_code" +
+						" ,ooi.return_amount,ooi.offset_orders,ooi.all_offset_amount" +
+						" ,ooi.balance,ooi.creater,ooi.last_user,ooi.create_time,ooi.last_operate_time" +
+						" from order_offset_info ooi where 1=1 " + term;
+				if(!"".equals(orderOffset.getOrderCode())&&orderOffset.getOrderCode()!=null){
+					sqlStr += " and ooi.order_code in ("+orderOffset.getOrderCode()+")";
+				}
+				if((!"".equals(order.getPnr())&&order.getPnr()!=null)||order.getType()!=99||(!"".equals(order.getClientid())&&order.getClientid()!=null)){
+					sqlStr += " and exists (select 1 from orderinfo o where 1=1 and o.orderid = ooi.order_code ";
+					if(!"".equals(order.getPnr())&&order.getPnr()!=null){
+						sqlStr += " and o.pnr ='"+order.getPnr()+"'";
+					}
+					if(order.getType()!=99){
+						sqlStr += " and o.type ="+order.getType()+"";
+					}
+					if(!"".equals(order.getClientid())&&order.getClientid()!=null){
+						sqlStr += " and o.cid ='"+order.getClientid()+"'";
+					}
+					sqlStr +=")";
+				}
+				
+				sqlStr += " order by ooi.order_offset_code desc";
+				executeQuery(sqlStr);
+				while (rs.next()) {
+					Long orderOffsetCode = rs.getLong("order_offset_code");
+					String orderCode = rs.getString("order_code");
+					Float returnAmount = rs.getFloat("return_amount");
+					String offsetOrders = rs.getString("offset_orders");
+					Float allOffsetAmount = rs.getFloat("all_offset_amount");
+					Float balance = rs.getFloat("balance");
+					String creater = StringUtil.toString(rs.getString("creater"));
+					String operator = StringUtil.toString(rs.getString("last_user"));
+					String createTime = StringUtil.toString(rs.getDate("create_time"))+" "+StringUtil.toString(rs.getTime("create_time"));
+					String updateTime = StringUtil.toString(rs.getDate("last_operate_time"))+" "+StringUtil.toString(rs.getTime("last_operate_time"));
+					if (count != 0)
+						bf.append(",");
+					bf.append("{'orderOffsetCode':'" + orderOffsetCode)
+							.append("','orderCode':'" + orderCode)
+							.append("','returnAmount':'" + returnAmount)
+							.append("','offsetOrders':'" + offsetOrders)
+							.append("','allOffsetAmount':'" + allOffsetAmount)
+							.append("','balance':'" + balance)
+							.append("','creater':'" + creater)
+							.append("','createTime':'" + createTime)
+							.append("','operator':'" + operator)
+							.append("','updateTime':'" + updateTime+ "'}");
+					count++;
+					
+				}
+				counts = "总数：" + count;
+				tojsonNew(counts);
+			}
+		} catch (Exception e) {
+			skip = ERROR;
+			addActionError(e.toString());
+			e.printStackTrace();
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+	
+}

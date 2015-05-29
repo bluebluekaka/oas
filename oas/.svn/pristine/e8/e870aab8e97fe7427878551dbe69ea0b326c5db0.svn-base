@@ -1,0 +1,251 @@
+package com.oas.objects;
+
+public class Order {
+
+	private String orderid;
+	private int type;
+	private int state;
+	private int producttype;
+	private String productname;
+	private String pnr;
+	private String clientid;
+	private String loadtxt;
+	private String pdata;
+	private String cdata;
+	private String ldata;
+	private String cmntdata;
+	private String cmnt;
+	private String updatetxt;
+	private double recmoney;
+	private double paymoney;
+	private String omoney;
+	private String omoneycmnt;
+
+	private String savepdata;
+	private String savecdata;
+
+	private String custname;
+	private String custqq;
+	private String custphone;
+	private String custmoney;
+	private String custpiadmoney;
+	private String custcompany;
+	private String offer;
+
+	public String getOffer() {
+		return offer;
+	}
+
+	public String getCustpiadmoney() {
+		return custpiadmoney;
+	}
+
+	public void setCustpiadmoney(String custpiadmoney) {
+		this.custpiadmoney = custpiadmoney;
+	}
+
+	public void setOffer(String offer) {
+		this.offer = offer;
+	}
+
+	public String getCustcompany() {
+		return custcompany;
+	}
+
+	public void setCustcompany(String custcompany) {
+		this.custcompany = custcompany;
+	}
+
+	public String getCustname() {
+		return custname;
+	}
+
+	public String getLdata() {
+		return ldata;
+	}
+
+	public void setLdata(String ldata) {
+		this.ldata = ldata;
+	}
+
+	public void setCustname(String custname) {
+		this.custname = custname;
+	}
+
+	public String getCustqq() {
+		return custqq;
+	}
+
+	public void setCustqq(String custqq) {
+		this.custqq = custqq;
+	}
+
+	public String getCustphone() {
+		return custphone;
+	}
+
+	public void setCustphone(String custphone) {
+		this.custphone = custphone;
+	}
+
+	public String getCustmoney() {
+		return custmoney;
+	}
+
+	public void setCustmoney(String custmoney) {
+		this.custmoney = custmoney;
+	}
+
+	public String getSavepdata() {
+		return savepdata;
+	}
+
+	public String getCmntdata() {
+		return cmntdata;
+	}
+
+	public void setCmntdata(String cmntdata) {
+		this.cmntdata = cmntdata;
+	}
+
+	public double getRecmoney() {
+		return recmoney;
+	}
+
+	public void setRecmoney(double recmoney) {
+		this.recmoney = recmoney;
+	}
+
+	public double getPaymoney() {
+		return paymoney;
+	}
+
+	public void setPaymoney(double paymoney) {
+		this.paymoney = paymoney;
+	}
+
+	public void setSavepdata(String savepdata) {
+		this.savepdata = savepdata;
+	}
+
+	public String getSavecdata() {
+		return savecdata;
+	}
+
+	public void setSavecdata(String savecdata) {
+		this.savecdata = savecdata;
+	}
+
+	public String getOmoney() {
+		return omoney;
+	}
+
+	public void setOmoney(String omoney) {
+		this.omoney = omoney;
+	}
+
+	public String getOmoneycmnt() {
+		return omoneycmnt;
+	}
+
+	public void setOmoneycmnt(String omoneycmnt) {
+		this.omoneycmnt = omoneycmnt;
+	}
+
+	public String getCmnt() {
+		return cmnt;
+	}
+
+	public void setCmnt(String cmnt) {
+		this.cmnt = cmnt;
+	}
+
+	public String getUpdatetxt() {
+		return updatetxt;
+	}
+
+	public void setUpdatetxt(String updatetxt) {
+		this.updatetxt = updatetxt;
+	}
+
+	public String getPdata() {
+		return pdata;
+	}
+
+	public void setPdata(String pdata) {
+		this.pdata = pdata;
+	}
+
+	public String getCdata() {
+		return cdata;
+	}
+
+	public void setCdata(String cdata) {
+		this.cdata = cdata;
+	}
+
+	public String getOrderid() {
+		return orderid;
+	}
+
+	public void setOrderid(String orderid) {
+		this.orderid = orderid;
+	}
+
+	public int getType() {
+		return type;
+	}
+
+	public void setType(int type) {
+		this.type = type;
+	}
+
+	public int getState() {
+		return state;
+	}
+
+	public void setState(int state) {
+		this.state = state;
+	}
+
+	public int getProducttype() {
+		return producttype;
+	}
+
+	public void setProducttype(int producttype) {
+		this.producttype = producttype;
+	}
+
+	public String getProductname() {
+		return productname;
+	}
+
+	public void setProductname(String productname) {
+		this.productname = productname;
+	}
+
+	public String getClientid() {
+		return clientid;
+	}
+
+	public void setClientid(String clientid) {
+		this.clientid = clientid;
+	}
+
+	public String getLoadtxt() {
+		return loadtxt;
+	}
+
+	public void setLoadtxt(String loadtxt) {
+		this.loadtxt = loadtxt;
+	}
+
+	public String getPnr() {
+		return pnr;
+	}
+
+	public void setPnr(String pnr) {
+		this.pnr = pnr;
+	}
+
+}

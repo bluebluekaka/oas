@@ -1,0 +1,81 @@
+body{
+	margin:0px;
+	background-color:#FFF;
+	font-family: "Courier New", Verdana;
+	font-size:12px;
+}
+th{
+	font-size: 12px;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	color: #181818;
+	}
+
+a{
+	font-size:12px;
+	color: blue;
+	text-decoration: none;
+	font-weight:bold;
+}
+
+a:hover{
+	color: red;
+	text-decoration: underline;
+	font-weight:bold;
+}
+
+.def{
+	font-size:12px;
+	font-family: Verdana;
+	color:#333399;
+}
+
+input.btn0{
+	cursor: hand;
+	color:#00F;
+	font-size:13px;
+	height:24px;
+	 
+	font-family: "Courier New", Verdana;
+}
+
+input.thin{
+	border:1px solid gray;
+	height:20px;
+	font-family: "Courier New", Verdana;
+}
+
+td.teamtd{
+	border:1px solid #66ddaa;
+}
+
+td.none{
+	border:0px;
+}
+
+table.tbl
+{
+	border:1px;
+	font-size:12px;
+	font-family: "Courier New", Verdana;
+}
+
+td.none{
+	border:0px;
+}
+
+tr.title{
+	background:url(../images/top_down.jpg) repeat-x;
+	height: 25;
+	color:#000;
+	font-family: "Courier New", Verdana;
+	border:1px solid eeeeee;
+}
+
+td.title{
+	/*background-color: #eeeffe;*/
+	height: 22;
+	color: black;
+	text-align: right;
+	font-family: "Courier New", Verdana;
+}

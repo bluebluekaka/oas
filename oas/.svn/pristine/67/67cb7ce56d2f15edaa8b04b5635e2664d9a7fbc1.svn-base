@@ -1,0 +1,257 @@
+package com.oas.web.json;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.objects.Customer;
+import com.oas.objects.Order;
+import com.oas.objects.Query;
+import com.oas.objects.User;
+import com.oas.util.StringUtil;
+
+public class QueryJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private String moduleName;
+	private String id;
+	private Query query;
+	private Order order;
+	private Customer customer;
+	private User user;
+
+	public String getModuleName() {
+		return moduleName;
+	}
+
+	public void setModuleName(String moduleName) {
+		this.moduleName = moduleName;
+	}
+
+	public Order getOrder() {
+		return order;
+	}
+
+	public void setOrder(Order order) {
+		this.order = order;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	public Query getQuery() {
+		return query;
+	}
+
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public String execute() throws Exception {
+		String ssss = "";
+		try {
+//			if (action != null) {
+				if(moduleName!=null){
+					List<Map<String,String>> dList = new ArrayList<Map<String,String>>();
+					skip = JSON;
+					String counts = "";
+					if("customer".equals(moduleName)){
+						sql = "select c.customerID,c.company,c.name,c.phone,c.QQ,c.residualValue,u.name salesman" +
+								" from customer c,user u" +
+								" where 1=1 and c.operator = u.workcardno ";
+						if(user!=null&&!"".equals(user.getName())){
+							sql += " and u.name ='"+user.getName()+"'";
+						}
+						if(customer!=null&&!"".equals(customer.getCustomerID())){
+							sql += " and c.customerID ='"+customer.getCustomerID()+"'";
+						}
+						if(customer!=null&&!"".equals(customer.getName())){
+							sql += " and c.name like '%"+customer.getName()+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getCompany())){
+							sql += " and c.company like '%"+customer.getCompany()+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getPhone())){
+							sql += " and c.phone like '"+customer.getPhone()+"%'";
+						}
+						if(customer!=null&&!"".equals(customer.getQq())){
+							sql += " and c.QQ like '"+customer.getQq()+"%'";
+						}
+//						System.out.println(sql);
+						executeQuery(sql);
+						while (rs.next()) {
+							String customerid=rs.getString("customerID");
+							String name=rs.getString("name");
+							String phone=rs.getString("phone");
+							String QQ=rs.getString("QQ");
+							String residualValue=rs.getString("residualValue");
+							String company=rs.getString("company");
+							String salesman=rs.getString("salesman");
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'customerid':'" + customerid)
+									.append("','name':'" + name)
+									.append("','phone':'" + phone)
+									.append("','qq':'" + QQ)
+									.append("','residualValue':'" + residualValue)
+									.append("','salesman':'" + salesman)
+									.append("','company':'" + company+"'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}else if("order".equals(moduleName)){
+						term = Helper.getQuerySqlNull(query, "lasttimei");
+//						if (Config.USER_TYPE_COMMON == Integer.valueOf(usertype)) {
+//							term += " and userid='" + userid + "'";
+//						}
+						sql = "select id,orderid,state,type,producttype,productname,cid,pnr,recmoney,paymoney,lasttime,cmnt,userid,lastuser,profit from orderinfo where 1=1 ";
+						if(order!=null&&order.getType()!=99){
+							sql += " and type ="+order.getType()+"";
+						}
+						sql +=	term + "  order by id";
+//						System.out.println(sql);
+						executeQuery(sql);
+						while (rs.next()) {
+							String orderid = rs.getString("orderid");
+							String state = Helper.getOrterState1(rs.getInt("state"));
+							String type = Helper.getOrderType(rs.getInt("type"));
+							String producttype = Helper.getProductType(rs.getInt("producttype"));
+							String productname = rs.getString("productname");
+							String clientid = rs.getString("cid");
+							String pnr = rs.getString("pnr");
+							float recmoney = rs.getFloat("recmoney");
+							float paymoney = rs.getFloat("paymoney");
+//							String date = rs.getDate("lasttime") + "";
+							String lastTime = StringUtil.toString(rs.getDate("lasttime"))+" "+StringUtil.toString(rs.getTime("lasttime"));
+//							String ltime = rs.getTime("lasttime") + "";
+							String user = rs.getString("userid");
+							String luser = StringUtil.toString(rs.getString("lastuser"));
+							String profit = rs.getString("profit");
+						
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'orderid':'" + orderid)
+									.append("','type':'" + type)
+									.append("','state':'" + state)
+									.append("','pnr':'"+pnr.trim()+"',")
+									.append("'recmoney':'" + recmoney)
+									.append("','producttype':'" + producttype)
+									.append("','productname':'" + productname)
+									.append("','paymoney':'" + paymoney)
+									.append("','profit':'" + profit)
+									.append("','clientid':'" + clientid)
+									.append("','user':'" + user)
+									.append("','lastTime':'" + lastTime)
+									.append("','luser':'" + luser+ "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}else if("financial".equals(moduleName)){
+						term = Helper.getQuerySqlNull(query, "lasttimei");
+//						if (Config.USER_TYPE_COMMON == Integer.valueOf(usertype)) {
+//							term += " and userid='" + userid + "'";
+//						}
+						sql = "SELECT fo.financial_order_code,fo.order_code" +
+								",fo.adjust_profit,oi.recmoney,oi.paymoney" +
+								",fo.order_state,fo.received_amount,fo.received_state" +
+								",fo.creater,fo.create_time,fo.last_user,fo.last_operate_time" +
+								" FROM financial_order fo,orderinfo oi " +
+								" where 1=1 and fo.order_code = oi.orderid and fo.order_state = 0 and fo.received_state in (0,1) ";
+//						if(order.getType()!=99){
+//							sql += " and type ="+order.getType()+"";
+//						}
+						if(customer!=null&&!"".equals(customer.getCustomerID())){
+							sql += " and oi.cid ='"+customer.getCustomerID()+"' ";
+						}
+						sql +=	term + "  order by fo.financial_order_code desc";
+//						System.out.println(sql);
+						executeQuery(sql);
+						while (rs.next()) {
+							Long financialOrderCode = rs.getLong("financial_order_code");
+							String orderCode = rs.getString("order_code");
+							Float recmoney = rs.getFloat("recmoney");
+							Float paymoney = rs.getFloat("paymoney");
+							float adjustProfit = rs.getFloat("adjust_profit");
+							float receivedAmount = rs.getFloat("received_amount");
+							int receiveState = rs.getInt("received_state");
+							int orderState = rs.getInt("order_state");
+							String creater = StringUtil.toString(rs.getString("creater"));
+							String operator = StringUtil.toString(rs.getString("last_user"));
+							String createTime = StringUtil.toString(rs.getDate("create_time"))+" "+StringUtil.toString(rs.getTime("create_time"));
+							String updateTime = StringUtil.toString(rs.getDate("last_operate_time"))+" "+StringUtil.toString(rs.getTime("last_operate_time"));
+//							dList.add(map); 
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'financialOrderCode':'" + financialOrderCode)
+									.append("','orderCode':'" + orderCode)
+									.append("','recmoney':'" + recmoney)
+									.append("','paymoney':'" + paymoney)
+									.append("','adjustProfit':'" + adjustProfit)
+									.append("','receivedAmount':'" + receivedAmount)
+									.append("','receiveState':'" + receiveState)
+									.append("','orderState':'" + orderState)
+									.append("','creater':'" + creater)
+									.append("','operator':'" + operator)
+									.append("','createTime':'" + createTime)
+									.append("','updateTime':'" + updateTime+ "'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}else if("transferAccount".equals(moduleName)){
+						sql = "select DISTINCT ct.transfer_account from customer_transfer ct";
+						executeQuery(sql);
+						while (rs.next()) {
+							String transferAccount = rs.getString("transfer_account");
+							if (count != 0)
+								bf.append(",");
+							bf.append("{'text':'" + transferAccount+"','id':'" + transferAccount+"'}");
+							count++;
+							
+						}
+						counts = "总数：" + count;
+						tojsonNew(counts);
+					}
+				}
+				
+		} catch (Exception e) {
+			skip = ERROR;
+			e.printStackTrace();
+			addActionError(e.toString());
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+}

@@ -1,0 +1,478 @@
+package com.oas.web.json;
+
+import java.math.BigDecimal;
+import java.net.URLDecoder;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.Config;
+import com.oas.common.DBCache;
+import com.oas.common.DataSourceAction;
+import com.oas.common.Utils;
+import com.oas.objects.Customer;
+import com.oas.objects.User;
+
+public class CustomerJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private User user;
+	private Customer customer;
+	private String id;
+	private String customerID;
+	private String transfer_account;
+	private String transfer_amount;
+	private String change_user;
+	private String query_other;
+	float recmoneys = 0;
+
+	public String getQuery_other() {
+		return query_other;
+	}
+
+	public void setQuery_other(String query_other) {
+		this.query_other = query_other;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getCustomerID() {
+		return customerID;
+	}
+
+	public void setCustomerID(String customerID) {
+		this.customerID = customerID;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public String getTransfer_account() {
+		return transfer_account;
+	}
+
+	public void setTransfer_account(String transfer_account) {
+		this.transfer_account = transfer_account;
+	}
+
+	public String getTransfer_amount() {
+		return transfer_amount;
+	}
+
+	public void setTransfer_amount(String transfer_amount) {
+		this.transfer_amount = transfer_amount;
+	}
+
+	public String getChange_user() {
+		return change_user;
+	}
+
+	public void setChange_user(String change_user) {
+		this.change_user = change_user;
+	}
+
+	public float getRecmoneys() {
+		return recmoneys;
+	}
+
+	public void setRecmoneys(float recmoneys) {
+		this.recmoneys = recmoneys;
+	}
+
+	public String execute() throws Exception {
+		//		String now_user_id = (String) getSession().getAttribute(Config.USER_ID);
+		String now_user_workNo = (String) getSession().getAttribute(Config.USER_WORKNO);
+		User currCust = null;
+		String nowdate = Utils.getNowDate();
+		Integer currUserType = null;
+		if (now_user_workNo != null) {
+			currCust = getUser(now_user_workNo);
+			currUserType = currCust.getUsertype();
+		}
+		//		Long sequenceid = DBCache.getSequence();
+		try {
+			if (action != null) {
+				skip = SUCCESS;
+				if ("add".equals(action)) {
+					customer = new Customer();
+					customer.setCustomerID(getCustid(now_user_workNo));
+					getSession().setAttribute("flag", "true");
+					skip = EDIT;
+				} else if ("save".equals(action)) {
+					String custid = getCustid(now_user_workNo);
+					//String pwd = Utils.getMD5(user.getPwd().getBytes());
+					sql = "insert into customer(customerID,name,company,sex,telephone,phone,QQ,address,operator,residualValue,state,createtime) values("
+							+ "'"
+							+ custid
+							+ "','"
+							+ customer.getName().trim()
+							+ "','"
+							+ customer.getCompany()
+							+ "','"
+							+ customer.getSex()
+							+ "','"
+							+ customer.getTelephone()
+							+ "','"
+							+ customer.getPhone()
+							+ "','"
+							+ customer.getQq()
+							+ "','"
+							+ customer.getAddress()
+							+ "','"
+							+ now_user_workNo
+							+ "','"
+							+ customer.getResidualValue()
+							+ "','"
+							+ customer.getState()
+							+ "','"
+							+ Utils.getNowDate()
+							+ "')";
+					executeUpdate(sql);
+					DBCache.USER_MAX_ID++;
+					sql = "insert into customer_amount_logs(customer_id,residualValueNew,paid_amount_new,cmnt) values('" + custid
+							+ "',"  + customer.getResidualValue() + ",0,'新增客户')";
+					executeUpdate(sql);
+					markUserLogs("添加" + customer.getCustomerID() + "客户");
+				} else if ("delete".equals(action)) {//删除判断
+					if (this.checkExistOrder(customerID)) {
+						skip = ERROR;
+						addActionError("该客户下有相关订单信息");
+					} else {
+						sql = "update customer set state= '3'  where customerID ='" + customerID + "'";
+						executeUpdate(sql);
+						markUserLogs("删除" + id + "客户");
+					}
+				} else if ("forbid".equals(action)) {
+					sql = "update customer set state= '1'  where customerID in ('" + customerID + "')";
+					executeUpdate(sql);
+					markUserLogs("禁用" + customerID + "客户");
+				} else if ("tranToUser".equals(action)) {//转移
+					String custIdList = getCustomer().getCustomerID();
+					//change_user
+					String[] ary = custIdList.split(",");
+					User u = this.getUser(change_user);
+					if (u != null) {
+						for (String item : ary) {
+							if (changeCustomerOperator(String.valueOf(item), change_user)) {
+								markUserLogs("转移" + item + "客户到" + change_user + "操作员名下");
+							} else {
+								skip = ERROR;
+								addActionError("客户id为: " + item + " 的数据出错。");
+							}
+
+						}
+					} else {
+						skip = ERROR;
+						addActionError("工号为: " + change_user + " 无效！");
+					}
+
+				} else if ("change".equals(action)) {
+					sql = "update customer set name='" + customer.getName() + "'" + ",company='"
+							+ customer.getCompany() + "'" + ",sex='" + customer.getSex() + "'" + ",telephone='"
+							+ customer.getTelephone() + "'" + ",phone='" + customer.getPhone() + "'" + ",qq='"
+							+ customer.getQq() + "'" + ",address='" + customer.getAddress() + "'" + ",operator='"
+							+ now_user_workNo + "'" + ",residualValue='" + customer.getResidualValue() + "'"
+							+ ",state='" + customer.getState() + "'" + " where customerID = '"
+							+ customer.getCustomerID() + "'";
+					//System.out.println(sql);
+					executeUpdate(sql);
+					markUserLogs("修改" + now_user_workNo + "客户信息");
+				} else if ("display".equals(action)) {
+					sql = "select customerID,name,company,sex,telephone,phone,QQ,address,operator,residualValue,state,createtime from customer where 1=1"
+							+ " and customerid = '" + customerID + "'";
+					//业务员只能看自己的客户。
+					if (currUserType != null && currUserType == Config.USER_TYPE_COMMON) {
+						sql += " and operator='" + currCust.getWorkcardno() + "'";
+						;
+					}
+					executeQuery(sql);
+					if (rs.next()) {
+						Customer customer = new Customer();
+						customer.setCustomerID(customerID);
+						customer.setName(rs.getString(2));
+						customer.setCompany(rs.getString(3));
+						customer.setSex(rs.getString(4));
+						customer.setTelephone(rs.getString(5));
+						customer.setPhone(rs.getString(6));
+						customer.setQq(rs.getString(7));
+						customer.setAddress(rs.getString(8));
+						customer.setOperator(rs.getString(9));
+						customer.setResidualValue(rs.getFloat(10));
+						customer.setState(rs.getString("state"));
+						customer.setFlag(rs.getString("createtime").equals(nowdate));
+						this.customer = customer;
+						boolean flag = rs.getString("createtime").equals(nowdate);
+						getSession().setAttribute("flag", String.valueOf(flag));
+						skip = EDIT;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + customerID + " not exists");
+					}
+				} else if ("view".equals(action)) {
+					sql = "select customerID,name,company,sex,telephone,phone,QQ,address,operator,residualValue,state,createtime from customer where 1=1"
+							+ " and customerid = '" + customerID + "'";
+					//业务员只能看自己的客户。
+					if (currUserType != null && currUserType == Config.USER_TYPE_COMMON) {
+						sql += " and operator='" + currCust.getWorkcardno() + "'";
+						;
+					}
+					executeQuery(sql);
+					if (rs.next()) {
+						Customer customer = new Customer();
+						customer.setCustomerID(customerID);
+						customer.setName(rs.getString(2));
+						customer.setCompany(rs.getString(3));
+						customer.setSex(rs.getString(4));
+						customer.setTelephone(rs.getString(5));
+						customer.setPhone(rs.getString(6));
+						customer.setQq(rs.getString(7));
+						customer.setAddress(rs.getString(8));
+						customer.setOperator(rs.getString(9));
+						customer.setResidualValue(rs.getFloat(10));
+						customer.setState(rs.getString("state"));
+						this.customer = customer;
+						boolean flag = rs.getString("createtime").equals(nowdate);
+						getSession().setAttribute("flag", String.valueOf(flag));
+						skip = VIEW;
+					} else {
+						skip = ERROR;
+						addActionError("Reason:  " + customerID + " not exists");
+					}
+				} else if ("check".equals(action)) {
+					sql = "select customerID from customer where customerID = '" + customer.getCustomerID() + "'";
+
+					executeQuery(sql);
+					if (rs.next()) {
+						setResult(false);
+					}
+					skip = CHECK;
+				} else if ("checkTelephone".equals(action)) {
+					if (customerID != null) {
+						String telephone = "";
+						sql = "select telephone from customer where customerID = '" + customerID + "' ";
+						executeQuery(sql);
+						if (rs.next()) {
+							telephone = rs.getString("telephone");
+						}
+						//						System.out.println(telephone);
+						if (telephone.equals(customer.getTelephone())) {
+							setResult(true);
+						} else {
+							sql = "select customerID from customer where telephone = '" + customer.getTelephone() + "'";
+
+							executeQuery(sql);
+							if (rs.next()) {
+								setResult(false);
+							}
+						}
+					} else {
+						sql = "select customerID from customer where telephone = '" + customer.getTelephone() + "'";
+
+						executeQuery(sql);
+						if (rs.next()) {
+							setResult(false);
+						}
+					}
+
+					skip = CHECK;
+				} else if ("checkQq".equals(action)) {
+
+					if (customerID != null) {
+						String qq = "";
+						sql = "select qq from customer where customerID = '" + customerID + "' ";
+						executeQuery(sql);
+						if (rs.next()) {
+							qq = rs.getString("qq");
+						}
+						//						System.out.println(qq);
+						if (qq.equals(customer.getQq())) {
+							setResult(true);
+						} else {
+							sql = "select customerID from customer where qq = '" + customer.getQq() + "'";
+
+							executeQuery(sql);
+							if (rs.next()) {
+								setResult(false);
+							}
+						}
+					} else {
+						sql = "select customerID from customer where qq = '" + customer.getQq() + "'";
+
+						executeQuery(sql);
+						if (rs.next()) {
+							setResult(false);
+						}
+					}
+					skip = CHECK;
+				} else if ("select".equals(action)) {
+					skip = JSON;
+					bf = new StringBuffer(getAllCustomer4Select(""));
+					return "select";
+				}
+			} else {
+				if (customer != null) {
+					if (now_user_workNo != null && !Utils.isNull(customer.getCustomerID())) {
+						term = " and customerID like '%" + customer.getCustomerID().trim() + "%'";
+					}
+					if (now_user_workNo != null && !Utils.isNull(customer.getTelephone())) {
+						term += " and telephone like '%" + customer.getTelephone().trim() + "%'";
+					}
+					if (now_user_workNo != null && !Utils.isNull(customer.getQq())) {
+						term += " and QQ like '%" + customer.getQq().trim() + "%'";
+					}
+					if (now_user_workNo != null && !Utils.isNull(customer.getName())) {
+						String name = URLDecoder.decode(customer.getName(), "UTF-8");
+						term += " and name like '%" + name.trim() + "%'";
+					}
+					if (now_user_workNo != null && !Utils.isNull(customer.getCompany())) {
+						String company = URLDecoder.decode(customer.getCompany(), "UTF-8");
+						term += " and company like '%" + company.trim() + "%'";
+					}
+					if (now_user_workNo != null && !Utils.isNull(customer.getState())) {
+						if (customer.getState() == "*") {
+
+						} else {
+							term += " and state = '" + customer.getState() + "'";
+						}
+					}
+				}
+				//业务员查询权限限制
+				//				if (currUserType != null && currUserType == Config.USER_TYPE_COMMON) {
+				//					term += " and operator='" + currCust.getWorkcardno() + "'";
+				//				}else if(currUserType != null && currUserType == Config.USER_TYPE_TOP_MANERGER){
+				//					term += "";
+				//				}else if(currUserType != Config.USER_TYPE_FINANCE && currUserType != Config.USER_TYPE_FINANCE_MANERGER){
+				//					if(Utils.isNull(query_other)){
+				//						term += " and operator='" + currCust.getWorkcardno()  + "'";
+				//					}else{
+				//						term += " and operator='" + query_other  + "'";
+				//					}
+				//				}
+
+				if (currUserType != null && currUserType == Config.USER_TYPE_COMMON) {
+					term += " and operator='" + currCust.getWorkcardno() + "'";
+				}
+				if (currUserType != Config.USER_TYPE_FINANCE && currUserType != Config.USER_TYPE_FINANCE_MANERGER) {
+					if (Utils.isNull(query_other)) {
+						term += " and operator='" + currCust.getWorkcardno() + "'";
+					} else {
+						term += " and operator='" + query_other + "'";
+					}
+				}
+				
+				if (currUserType == Config.USER_TYPE_FINANCE || currUserType == Config.USER_TYPE_FINANCE_MANERGER) {
+					if (!Utils.isNull(query_other)) {
+						term += " and operator='" + query_other + "'";
+					}
+				}
+
+				skip = JSON;
+				sql = "select customerID,name,company,sex,telephone,phone,QQ,address,operator,residualValue,paid_amount,state,createtime from customer where state<>3 "
+						+ term + "  order by customerID";
+				//System.out.println(sql);
+				executeQuery(sql);
+				Float paidAmounts = 0f;
+				java.text.DecimalFormat   df   =new   java.text.DecimalFormat("#.00");  
+				while (rs.next()) {
+					//customerID,name,company,sex,telephone,phone,QQ,address,operator,residualValue
+					String customerid = rs.getString(1);
+					String name = rs.getString(2);
+					String company = rs.getString(3);
+					int sex = rs.getInt("sex");
+					String telephone = rs.getString(5);
+					String phone = rs.getString(6);
+					String QQ = rs.getString(7);
+					String address = rs.getString(8);
+					String operator = rs.getString(9);
+					Float residualValue = rs.getFloat("residualValue");
+					Float paidAmount = rs.getFloat("paid_amount");
+					String state = rs.getString("state");
+					String ct = rs.getString("createtime");
+					
+//					BigDecimal bdPaidAmount = new BigDecimal(paidAmount);  
+//					paidAmounts += bdPaidAmount.setScale(2, BigDecimal.ROUND_HALF_UP).floatValue();
+					paidAmounts += Float.valueOf(df.format(paidAmount));
+					recmoneys += Float.valueOf(residualValue);
+					if (Utils.isNull(name))
+						name = "-";
+					if (Utils.isNull(company))
+						company = "-";
+
+					if (Utils.isNull(telephone))
+						telephone = "-";
+					if (Utils.isNull(phone))
+						phone = "-";
+					if (Utils.isNull(QQ))
+						QQ = "-";
+					if (Utils.isNull(address))
+						address = "-";
+					if (Utils.isNull(operator))
+						operator = "-";
+
+					if (count != 0)
+						bf.append(",");
+					String sext = "";
+					if (sex == 1) {
+						sext = "男";
+					} else {
+						sext = "女";
+					}
+					if (state.equals("1") || state == "1") {
+						state = "已停用";
+					} else if (state.equals("2") || state == "2") {
+						state = "已转移";
+					} else if (state.equals("3")) {
+						state = "已删除";
+					} else {
+						state = "已启用";
+					}
+					bf.append("{'HideID':'" + customerid + "'").append(",'客户ID':'" + customerid + "'")
+							.append(",'姓名':'" + name + "'").append(",'公司名称':'" + company + "'")
+							.append(",'性别':'" + sext + "'");
+					if (currUserType == Config.USER_TYPE_TOP_MANERGER) {//业务员不显示
+						bf.append(",'手机号':'" + telephone + "'").append(",'电话':'" + phone + "'")
+								.append(",'QQ':'" + QQ + "'").append(",'地址':'" + address + "'");
+					} else {
+						if (ct.equals(Utils.getNowDate()) && currUserType == Config.USER_TYPE_COMMON) {
+							bf.append(",'手机号':'" + telephone + "'").append(",'电话':'" + phone + "'")
+									.append(",'QQ':'" + QQ + "'").append(",'地址':'" + address + "'");
+						}
+					}
+
+					bf.append(",'操作员工号':'" + operator + "'").append(",'可支付余额':'" + residualValue + "'")
+							.append(",'待支付欠款':'" + paidAmount + "'").append(",'客户状态':'" + state + "'}");
+					count++;
+				}
+				paidAmounts = Float.valueOf(df.format(paidAmounts));
+				System.out.println(paidAmounts);
+				String counts = "总数：" + count + "  总可支付余额:" + recmoneys + "  总待支付欠款:" + paidAmounts;
+				tojson(counts);
+			}
+		} catch (Exception e) {
+			skip = ERROR;
+			addActionError(e.toString());
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+}

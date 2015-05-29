@@ -1,0 +1,1 @@
+insert into user(id,uid,name,pwd,email,state,usertype,phone,mobile,workcardno) values(1000,'admin', 'admin', '4a7d1ed414474e4033ac29ccb8653d9b', 'email@email.com', 1, 0, '-', '-','999');

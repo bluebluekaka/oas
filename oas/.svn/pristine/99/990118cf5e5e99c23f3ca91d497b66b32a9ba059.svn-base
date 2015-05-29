@@ -1,0 +1,444 @@
+<%@page contentType="text/html;charset=UTF-8" language="java" import="java.util.*"%><%@ include file="../common/taglibs.jsp"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>
+</title>
+    <link href="../ui/lib/ligerUI/skins/Aqua/css/ligerui-all.css" rel="stylesheet" type="text/css" /> 
+    <link href="../ui/lib/ligerUI/skins/ligerui-icons.css" rel="stylesheet" type="text/css" />
+    <link href="../ui/lib/ligerUI/skins/Gray/css/dialog.css" rel="stylesheet" type="text/css" />
+	<script src="../ui/lib/jquery/jquery-1.3.2.min.js" type="text/javascript"></script>  
+	<script src="../ui/lib/ligerUI/js/ligerui.all.min.js" type="text/javascript"></script> 
+    <script src="../ui/lib/jquery-validation/jquery.validate.min.js" type="text/javascript"></script> 
+    <script src="../ui/lib/jquery-validation/jquery.metadata.js" type="text/javascript"></script> 
+    <script src="../ui/lib/jquery-validation/messages_cn.js" type="text/javascript"></script> 
+    <!–[if lt IE 7]>
+		<script  type="text/javascript" src="../ui/JSONstringify.js"></script>
+	<![endif]–>
+    <script type="text/javascript"> 
+        var eee;
+        
+		<%
+			 	String usertype = (String)session.getAttribute(Config.USER_TYPE);
+				int utype = 1;
+				if(usertype!=null)
+					utype = Integer.valueOf(usertype);
+				int sta = 0;
+				Object o = request.getAttribute("order.state");
+				if(o!=null)
+					sta = Integer.valueOf(String.valueOf(o));
+			 
+				String gotos = "";
+				String required = "required:true,";
+				String url="order";
+				String listJsp=jspName.replace("info","list");
+				String state = "生成中";
+			 	
+		%>	
+        $(function () {	
+		 	$("#type").ligerComboBox({
+                data: [
+                { id: <%=Config.ORDER_TYPE_ORDER%>, text: '订票' },
+             	{ id: <%=Config.ORDER_TYPE_CANCEL%>, text: '退票' }
+                ], valueFieldID: 'type0'
+            });
+ 			 $("#type").ligerGetComboBoxManager().setValue(<s:property value='order.type'/>);
+			 $("#producttype").ligerComboBox({
+                data: [
+                { id: <%=Config.ORDER_PRC_TYPE_INTERNATIONL%>, text: '国际航班' },
+             	{ id: <%=Config.ORDER_PRC_TYPE_INTERNAL%>, text: '国内航班' },
+             	{ id: <%=Config.ORDER_PRC_TYPE_HOTEL%>, text: '酒店' },
+             	{ id: <%=Config.ORDER_PRC_TYPE_MARK%>, text: '签证' }
+                ], valueFieldID: 'type1'
+            });
+ 			 $("#producttype").ligerGetComboBoxManager().setValue(<s:property value='order.producttype'/>);
+			var pdata ={"Rows":[<s:property value='order.pdata'/> ],"Total": "0"};
+			$grid = $("#prcgrid").ligerGrid({
+                columns: [
+                { display: '承运人', name: 'carrier', width: 90  },
+                { display: '航班号', name: 'flight', width: 90 },
+                { display: '仓位', name: 'position', width: 90 },
+                { display: '行程', name: 'trip', width: 90 },
+                { display: '出发日期', name: 'sdate', width: 90 },
+                { display: '出发时间', name: 'stime', width: 90 },
+                { display: '到达日期', name: 'edate', width: 90 },
+                { display: '到达时间', name: 'etime', width: 90 }
+                ], data:pdata, width: '100%' ,usePager:false,height:110,rownumbers:true
+            }
+            );
+			
+			var ctypeData = [{ type:<%=Config.ADULT%>, text: '成人' }, { type: <%=Config.CHILD%>, text: '儿童'}, { type: <%=Config.BABY%>, text: '婴儿'}];
+
+			var cdata ={"Rows":[<s:property value='order.cdata'/> ],"Total": "0"};
+         	$grid1 = $("#cgrid").ligerGrid({
+                columns: [
+                { display: '旅客姓名', name: 'name', width: 120  },
+                { display: '旅客类型', name: 'type', width: 90,
+                    render: function (item)
+                    {
+                        if (parseInt(item.type) == <%=Config.BABY%>) return '婴儿';
+						else if (parseInt(item.type) == <%=Config.CHILD%>) return '儿童';
+                        else if (parseInt(item.type) == <%=Config.ADULT%>) return '成人';
+					 				 
+                    }
+ },
+                { display: '应收款', name: 'recmoney', width: 90},
+                { display: '票号', name: 'pnum', width: 180 },
+                { display: '供应商', name: 'supplier', width: 150  },
+                { display: '应付款', name: 'paymoney', width: 90  }
+                ],data:cdata, width: '100%' ,usePager:false,height:220,rownumbers:true,enabledEdit: true
+            }
+            );
+			
+			var cmntdata ={"Rows":[<s:property value='order.cmntdata'/> ],"Total": "0"};
+			$grid2 = $("#cmntgrid").ligerGrid({
+                columns: [
+                { display: '备注日期', name: 'cdate', width: 90  },
+                { display: '备注时间', name: 'ctime', width: 90 },
+                { display: '备注人', name: 'cname', width: 90 },
+                { display: '备注内容', name: 'ccmnt', width: 450 } 
+                ], data:cmntdata, width: '100%' ,usePager:false,height:150,rownumbers:true
+            }
+            );
+			var logdata ={"Rows":[<s:property value='order.ldata'/> ],"Total": "0"};
+			$grid3 = $("#orderlog").ligerGrid({
+                columns: [
+                { display: '操作日期', name: 'ldate', width: 90  },
+                { display: '操作时间', name: 'ltime', width: 90 },
+                { display: '操作人', name: 'luser', width: 90 },
+                { display: '操作内容', name: 'lcmnt', width: 250 } 
+                ], data:logdata, width: 600 ,usePager:false,height:110
+            }
+            ); 
+			
+        	$("form").ligerForm();
+        	$("#orderid").ligerGetTextBoxManager().setDisabled();
+			$("#clientid").ligerGetTextBoxManager().setDisabled();
+			$("#pnr").ligerGetTextBoxManager().setDisabled();
+			$("#type").ligerGetTextBoxManager().setDisabled();
+			$("#producttype").ligerGetTextBoxManager().setDisabled(); 
+			$("#productname").ligerGetTextBoxManager().setDisabled(); 
+			 
+			 
+		//	$("#orderid").attr("disabled", true);
+        //	$("#clientid").attr("disabled", true);
+        	
+			 
+             var v = $("form").validate({
+                debug: false,
+                rules: {
+                	"order.type":{required:true,minlength:2,maxlength:20 },
+ 					 "order.producttype":{required:true,minlength:2,maxlength:20 },
+					 "order.productname":{required:true,minlength:2,maxlength:20 },
+					 "order.clientid":{required:true,minlength:2,maxlength:20 } 
+                },
+                errorPlacement: function (lable, element) {
+
+                    if (element.hasClass("l-text-field")) {
+                        element.parent().addClass("l-text-invalid");
+                    }
+                    var nextCell = element.parents("td:first").next("td");
+                    if (nextCell.find("div.l-exclamation").length == 0) {
+                        $('<div class="l-exclamation" title="' + lable.html() + '"></div>').appendTo(nextCell).ligerTip();
+                    }
+                },
+                invalidHandler: function (form, validator) {
+                    var errors = validator.numberOfInvalids();
+                    if (errors) {
+                        var message = errors == 1
+                          ? '红色框的输入有误，请您检查填写的内容'
+                          : '红色框的输入有误，请您检查填写的内容';
+                        $("#errorLabelContainer").html(message).show();
+                    }
+                },
+                success: function (lable) {
+					try{
+                    var element = $("#" + lable.attr("for"));
+                    var nextCell = element.parents("td:first").next("td");
+                    if (element.hasClass("l-text-field")) {
+                        element.parent().removeClass("l-text-invalid");
+                    }
+                    nextCell.find("div.l-exclamation").remove();
+					}catch(e){}
+                },
+                submitHandler: function (form) {
+                   
+                }
+            });
+            
+            $(".l-button-test").click(function ()
+            {
+				$.ligerDialog.confirm('<br/>您的订单尚未保存或提交订单，<br/><br/>确定返回吗？',
+                 	function (yes) {
+	                 	if(yes==true) {
+	                 		 location.href = "<%=listJsp%>" ;
+	                 	}
+                 	} 
+					);	   
+            });
+        });  
+    
+	function loadCust(){
+			var qurl = '../manager/customer_list.jsp?query=true';
+			$.ligerDialog.open({ title:'查询',name:'wins',url: qurl,height: 500,width: 700,isResize: true,showMax:true, 
+				buttons: [
+				{ text: '确定', 
+					onclick: function (item, dialog) {
+						var values = document.getElementById('wins').contentWindow.getSelceted(); 
+					 	if(values!='error'){
+							$("#clientid").attr("value",values);
+							form1.action = 'order?loads=do&order.state=<%=sta%>'; 
+							dialog.close();
+							$("form").submit();	
+						 }
+					} },
+				{ text: '取消', onclick: function (item, dialog) { dialog.hide(); } } ] });
+	}
+	
+	function loadTxt(){
+		$.ligerDialog.open({ target: $("#target1"),title:'导入信息',height: 300,width: 500,isResize: true,showMax:true, 
+			buttons: [
+			{ text: '确定', 
+				onclick: function (item, dialog) {
+					var txt = $("#txtfile").val() ; 					
+					if(txt.length==0){
+						 alert("您没有导入任何数据");
+						 return false;
+					} 	 
+					$("#loadtxt").attr("value",txt); 
+					form1.action = 'order?loads=do'; 
+				 	$("form").submit();
+					dialog.hide();
+				} },
+			{ text: '取消', onclick: function (item, dialog) { dialog.hide(); } } ] });
+	}
+	function getUpdate(){
+         var data = $grid1.getUpdated();
+         return JSON.stringify(data);
+   	}
+   	
+	function confrim(){
+         $.ligerDialog.confirm('<br/>确定保存到数据库吗？',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<s:property value='order.state'/>"; 
+					$("form").submit();
+	        	}
+            } 
+		);	
+   	}
+   	
+	function waitf1(){
+         $.ligerDialog.confirm('<br/>确定提交到业务经理审核吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+					form1.action="order?order.state=<%=Config.ORDER_STATE_WAIT_COMMON_MANAGER%>";
+					$("form").submit();
+	        	}
+            } 
+		);	
+   	}
+
+	function waitf2(){
+         $.ligerDialog.confirm('<br/>确定提交到财务员待办吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+					form1.action="order?order.state=<%=Config.ORDER_STATE_WAIT_FINANCE%>";
+					$("form").submit();
+	        	}
+            } 
+		);	
+   	}   	
+
+	function f1pass(){
+         $.ligerDialog.confirm('<br/>确定该订单通过初审吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_ALLOW_COMMON_MANAGER%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+	function f1nopass(){
+         $.ligerDialog.confirm('<br/>确定该订单不通过审核吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_DISALLOW_COMMON_MANAGER%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+   	function f2pass(){
+         $.ligerDialog.confirm('<br/>确定该订单通过财务员审核吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_WAIT_FINANCE_MANAGER%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+	function f2nopass(){
+         $.ligerDialog.confirm('<br/>确定该订单不通过财务员审核吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_DISALLOW_FINANCE%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+   	function f3pass(){
+         $.ligerDialog.confirm('<br/>确定该订单通过财务经理审核吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_END%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+	function f3nopass(){
+         $.ligerDialog.confirm('<br/>确定该订单不通过财务经理审核吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_DISALLOW_FINANCE_MANAGER%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+	function confrimcancel(){
+         $.ligerDialog.confirm('<br/>确定取消该订单吗？<br/><br/>',
+            function (yes) {
+	        	if(yes==true) {
+	        		form1.action="order?order.state=<%=Config.ORDER_STATE_CANCLE%>";
+					$("form").submit();
+	        	}
+            } 
+		);	  
+   	}
+   	
+    </script>
+    <style type="text/css">
+           body{ font-size:12px;}
+        .l-table-edit {}
+        .l-table-edit-td{ padding:4px;}
+        .l-button-submit,.l-button-test{width:80px; float:left; margin-left:10px; padding-bottom:2px;}
+        .l-verify-tip{ left:230px; top:120px;}
+        #errorLabelContainer{ padding:10px; width:300px; border:1px solid #FF4466; display:none; background:#FFEEEE; color:Red;}
+    </style>
+	
+</head>
+
+<body style="padding:20px">
+
+    <form name="form1" method="post" class="l-form" id="form1" action="order" >
+
+	<div class="l-group l-group-hasicon">
+		<img src="../ui/lib/ligerUI/skins/icons/communication.gif"/>
+		<span><h2>订单状态：<%=Helper.getOrterState1(sta)%></h2></span>
+	</div>
+	<div id="errorLabelContainer" class="l-text-invalid">
+</div>
+	<textarea id="action" name="action" style=" display:none;" ><s:property value='action'/></textarea>
+	<table  width="880" cellpadding="0" cellspacing="0" class="l-table-edit"  >
+		<tr>
+			<td width="63" align="right" class="l-table-edit-td">订单编号:</td>
+            <td width="150" align="left" class="l-table-edit-td"><input name="order.orderid" id="orderid" ltype="text" value="<s:property value='order.orderid'/>" /></td>  <td width="91" align="left"></td>
+            <td width="70"   class="l-table-edit-td">订单类型:</td>
+            <td  align="left" class="l-table-edit-td"><input name="order.type" type="text" id="type" ltype="text"  value="<s:property value='order.type'/>" /></td> <td width="184" align="left"></td>
+        </tr>
+        <tr>
+        	<td align="right" class="l-table-edit-td">产品类型:</td>
+            <td align="left" class="l-table-edit-td"><input name="order.producttype" id="producttype" ltype="text" value="<s:property value='order.producttype'/>" /></td>
+            <td align="left"></td>
+            <td  class="l-table-edit-td">产品名称:</td>
+            <td align="left" class="l-table-edit-td"><input name="order.productname" id="productname" ltype="text" value="<s:property value='order.productname'/>" /></td>
+            <td align="left"></td>
+        </tr>
+         
+		<tr>
+        	<td align="right" class="l-table-edit-td">客户编号:</td>
+            <td align="left" class="l-table-edit-td"><input name="order.clientid" id="clientid" ltype="text" value="<s:property value='order.clientid'/>" /></td>
+            <td align="left"></td>
+            <td colspan="2" class="l-table-edit-td">&nbsp;</td>
+            <td align="left"></td>
+        </tr>
+       <tr>
+            <td align="right" class="l-table-edit-td">客户名称:</td>
+            <td align="left" class="l-table-edit-td"><s:property value='order.custname'/>&nbsp;</td>
+            <td align="left"></td>
+            <td align="right" class="l-table-edit-td">公司名称:</td>
+            <td align="left" class="l-table-edit-td"><s:property value='order.custcompany'/>&nbsp;</td>
+            <td align="left"></td>
+        </tr>
+        <tr>
+            <td align="right" class="l-table-edit-td">剩余金额: </td>
+            <td align="left" class="l-table-edit-td"><s:property value='order.custmoney'/>&nbsp;</td>
+            <td align="left"></td>
+            <td align="right" class="l-table-edit-td">&nbsp;</td>
+            <td align="left" class="l-table-edit-td">&nbsp;</td>
+            <td align="left"></td>
+        </tr>
+		<tr>
+            <td align="right" class="l-table-edit-td">PNR :</td>
+            <td align="left" class="l-table-edit-td"><input name="order.pnr" id="pnr" ltype="text" value="<s:property value='order.pnr'/>" /></td>
+            <td align="left"></td>
+            <td colspan="2" align="right" class="l-table-edit-td">&nbsp;</td>
+            <td align="left">&nbsp;</td>
+        </tr>
+        <tr>
+            <td align="right" class="l-table-edit-td">产品信息:</td>
+            <td colspan="5" align="left" class="l-table-edit-td"><div id="prcgrid"></div> </td>
+        </tr>
+        <tr>
+            <td align="right" class="l-table-edit-td">旅客信息:</td>
+            <td colspan="5" align="left" class="l-table-edit-td"><div id="cgrid"></div></td>
+        </tr>
+ 		<tr>
+            <td align="right" class="l-table-edit-td">历史备注:</td>
+            <td colspan="5" align="left" class="l-table-edit-td"> <div id="cmntgrid"></div>
+            </td>
+        </tr>
+         <tr>
+            <td align="right" class="l-table-edit-td">订单日志:</td>
+            <td colspan="5" align="left" class="l-table-edit-td"> 
+           <div id="orderlog"></div> </td>
+        </tr>
+       
+        <tr>
+            <td align="right" class="l-table-edit-td">&nbsp;</td>
+            <td colspan="5" align="left" class="l-table-edit-td"><textarea id="loadtxt" name="order.loadtxt" style=" display:none;" ><s:property value='order.loadtxt'/></textarea>
+            <textarea id="updatetxt" name="order.updatetxt" style=" display:none;" ><s:property value='order.updatetxt'/></textarea>
+            <textarea id="savepdata" name="order.savepdata" style=" display:none;" ></textarea>
+            <textarea id="savecdata" name="order.savecdata" style=" display:none;" ></textarea></td>
+        </tr>
+         
+      </table>
+ <br />
+
+<div id="target1"  style="display:none"  >
+  <table id="table1" cellpadding="0" cellspacing="0"     >
+    <tr>
+  	  	<td width="84"   align="right" class="l-table-edit-td">粘贴信息：</td><td width="356"   align="right" class="l-table-edit-td">&nbsp;</td>
+   	</tr>
+    <tr>
+      <td colspan="2"   align="center" class="l-table-edit-td"><textarea   id="txtfile" style="width:400px; height:220px;" ><s:property value='order.loadtxt'/></textarea></td>
+    </tr>
+  </table>
+</div>
+</form>
+    <div style="display:none">
+    <!--  数据统计代码 --></div>
+
+    
+</body>
+</html>

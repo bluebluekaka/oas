@@ -1,0 +1,75 @@
+package com.oas.web.json;
+
+import org.apache.log4j.Logger;
+
+import com.oas.common.DataSourceAction;
+import com.oas.common.Helper;
+import com.oas.objects.Query;
+
+public class OrderLogsJson extends DataSourceAction {
+	private static final long serialVersionUID = -5612721889737285900L;
+	protected final Logger log = Logger.getLogger(getClass());
+
+	private Query query;
+	private String sid;
+
+	public Query getQuery() {
+		return query;
+	}
+
+	public void setQuery(Query query) {
+		this.query = query;
+	}
+
+	public String getSid() {
+		return sid;
+	}
+
+	public void setSid(String sid) {
+		this.sid = sid;
+	}
+
+	public String execute() throws Exception {
+		try {
+			term = Helper.getQuerySql(query, "lasttimei");
+			skip = JSON;
+			sql = "select id,orderid,state,type,producttype,productname,cid,pnr,recmoney,paymoney,lasttime,cmnt,userid,lastuser from orderlogs where 1=1 "
+					+ term + "  order by id";
+			executeQuery(sql);
+			while (rs.next()) {
+				String id = rs.getString(1);
+				String order = rs.getString(2);
+				String state = Helper.getOrterState1(rs.getInt(3));
+				String type = Helper.getOrderType(rs.getInt(4));
+				String producttype = Helper.getProductType(rs.getInt(5));
+				String productname = rs.getString(6);
+				String clientid = rs.getString(7);
+				String pnr = rs.getString(8);
+				float recmoney = rs.getFloat(9);
+				float paymoney = rs.getFloat(10);
+				String date = rs.getDate(11) + "";
+				String time = rs.getTime(11) + "";
+				//String user = rs.getString(13);
+				String luser = rs.getString(14);
+
+				if (count != 0)
+					bf.append(",");
+				bf.append("{'HideID':'" + id ).append("','订单编号':'" + order)
+						.append("','订单类型':'" + type ).append("','订单状态':'" + state)
+						.append("','产品类型':'" + producttype ).append("','产品名称':'" + productname)
+						.append("','客户名称':'" + clientid).append("','PNR':'" + pnr)
+						.append("','总应收款':'" + recmoney ).append("','总应付款':'" + paymoney )
+						.append("','提交日期':'" + date).append("','提交时间':'" + time).append("','提交人':'" + luser + "'}");
+				count++;
+			}
+			String counts = "总数：" + count;
+			tojson(counts);
+		} catch (Exception e) {
+			skip = ERROR;
+			addActionError(e.toString());
+		} finally {
+			closeConnection();
+		}
+		return skip;
+	}
+}

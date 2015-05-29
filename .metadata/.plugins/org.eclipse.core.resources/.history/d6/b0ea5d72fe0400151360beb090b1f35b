@@ -1,0 +1,391 @@
+package com.test.manyTree;
+
+public class Tree {
+
+private Tree leftTree;
+
+private Tree rightTree;
+
+private Object treeValue;
+
+/**
+
+ * 返回几种遍历的结果
+
+ */
+
+public static String preOrderTravResult="先序遍历结果：";
+
+public static String inOrderTravResult="中序遍历结果：";
+
+public static String postOrderTravResult="后序遍历结果：";
+
+public static String levelOrderTravResult="层次遍历结果：";
+
+public Tree(Object treeValue){
+
+this.treeValue=treeValue;
+
+}
+
+public String toString(){
+
+//return "tree-"+this.treeNum;
+
+return treeValue+",";
+
+}
+
+//leftTree,rightTree的getter和setter方法省略。。。
+
+//stack栈用来保存相关数据
+
+public static Stack<Tree> stack=new Stack<Tree>();
+
+//stack显示代码行数
+
+public static int executeNum=1;
+
+public static void main(String [] args){
+
+System.out.println("很奇怪的现象：在打印Stack中的对象时，对象与对象之间多了一个 , ");
+
+//控制开关
+
+//logPrintSwitch=true;
+
+preOrderTrav(buildTree());
+
+System.out.println(preOrderTravResult);
+
+inOrderTrav(buildTree());
+
+System.out.println(inOrderTravResult);
+
+postOrderTrav(buildTree());
+
+System.out.println(postOrderTravResult);
+
+levelTrav(buildTree());
+
+System.out.println(levelOrderTravResult);
+
+}
+
+public static Tree buildTree(){
+
+Tree rootTree=new Tree("A");
+
+Tree tLeft1=new Tree("B");
+
+Tree dTree=new Tree("D");
+
+dTree.setLeftTree(new Tree("H"));
+
+Tree kTree=new Tree("K");
+
+dTree.setRightTree(kTree);
+
+tLeft1.setLeftTree(dTree);
+
+Tree eTree=new Tree("E");
+
+eTree.setRightTree(new Tree("I"));
+
+tLeft1.setRightTree(eTree);
+
+Tree tRight1=new Tree("C");
+
+tRight1.setLeftTree(new Tree("F"));
+
+tRight1.setRightTree(new Tree("G"));
+
+rootTree.setLeftTree(tLeft1);
+
+rootTree.setRightTree(tRight1);
+
+return rootTree;
+
+}
+
+public static boolean logPrintSwitch=false;
+
+public static void logPrintln(Object str){
+
+if(logPrintSwitch)
+
+System.out.println(str);
+
+}
+
+public static void logPrint(Object str){
+
+if(logPrintSwitch)
+
+System.out.print(str);
+
+}
+
+public static List<Tree> treeHeap=new ArrayList<Tree>();
+
+public static void levelTrav(Tree t){
+
+logPrint(executeNum+++":");
+
+if(t!=null){
+
+logPrintln(t+"");
+
+levelOrderTravResult+=t;
+
+if(t.getLeftTree()!=null){
+
+treeHeap.add(t.getLeftTree());
+
+}
+
+if(t.getRightTree()!=null){
+
+treeHeap.add(t.getRightTree());
+
+}
+
+if(treeHeap.size()>0){
+
+Tree tx=popHeap(treeHeap);
+
+levelTrav(tx);
+
+}
+
+}
+
+}
+
+public static void preOrderTrav(Tree t){
+
+// 先序排列：根——>左——>右
+
+logPrint(executeNum+++":");
+
+if(t!=null){
+
+preOrderTravResult+=t;
+
+logPrintln(t);
+
+if(t.getLeftTree()!=null){
+
+if(t.getRightTree()!=null){
+
+stack.push(t.getRightTree());
+
+logPrintln("------>"+stack);
+
+}
+
+preOrderTrav(t.getLeftTree());
+
+}else{
+
+if(t.getRightTree()!=null){
+
+preOrderTrav(t.getRightTree());
+
+}else if(t.getRightTree()==null&&!stack.empty()){
+
+Tree tempTree=stack.pop();
+
+preOrderTrav(tempTree);
+
+}
+
+}
+
+}
+
+}
+
+public static void inOrderTrav(Tree t){
+
+logPrint(executeNum+++":");
+
+// 中序排列：左——>根——>右
+
+if(t!=null){
+
+if(t.getLeftTree()!=null){
+
+stack.push(t);
+
+logPrintln("------>"+stack);
+
+inOrderTrav(t.getLeftTree());
+
+}else{
+
+logPrintln(t);
+
+inOrderTravResult+=t;
+
+if(t.getRightTree()!=null){
+
+inOrderTrav(t.getRightTree());
+
+}else if(t.getRightTree()==null&&!stack.empty()){
+
+Tree tempTree=stack.pop();
+
+tempTree.setLeftTree(null);
+
+inOrderTrav(tempTree);
+
+}
+
+}
+
+}
+
+}
+
+public static void postOrderTrav(Tree t){
+
+logPrint(executeNum+++":");
+
+// 后序排列：左——>右——>根
+
+if(t!=null){
+
+if(t.getLeftTree()!=null){
+
+stack.push(t);
+
+logPrintln("------>"+stack);
+
+postOrderTrav(t.getLeftTree());
+
+}else{
+
+if(t.getRightTree()!=null){
+
+stack.push(t);
+
+logPrintln("------>"+stack);
+
+postOrderTrav(t.getRightTree());
+
+}else if(t.getRightTree()==null){
+
+logPrintln(t);
+
+postOrderTravResult+=t;
+
+if(!stack.empty()){
+
+Tree tx=stack.pop();
+
+logPrintln("------>"+stack);
+
+int relationx=getRelation(t,tx);
+
+if(relationx==-1){
+
+tx.setLeftTree(null);
+
+if(tx.getRightTree()!=null){
+
+stack.push(tx);
+
+logPrintln("------>"+stack);
+
+postOrderTrav(tx.getRightTree());
+
+}else{
+
+postOrderTrav(tx);
+
+}
+
+}else if(relationx==-2){
+
+tx.setRightTree(null);
+
+postOrderTrav(tx);
+
+}
+
+}
+
+}
+
+}
+
+}
+
+}
+
+public static int getRelation(Tree t1,Tree t2){
+
+/**判断前者与后者是什么关系
+
+*默认t1为父树,t2为子树
+
+* 返回值 1 则t2是t1的左子树，2 则t2是t1的右子树，0表示两者没有联系
+
+* 返回值为负值，-1 则t1是t2的左子树，-2 则t1是t2的右子树
+
+*/
+
+if(t1.getLeftTree()!=null){
+
+if(t1.getLeftTree().toString().equals(t2.toString()))
+
+return 1;
+
+}
+
+if(t1.getRightTree()!=null){
+
+if (t1.getRightTree().toString().equals(t2.toString())) 
+
+return 2;
+
+}
+
+if(t2.getLeftTree()!=null){
+
+if(t2.getLeftTree().toString().equals(t1.toString()))
+
+return -1;
+
+}
+
+if(t2.getRightTree()!=null){
+
+if (t2.getRightTree().toString().equals(t1.toString()))
+
+return -2;
+
+}
+
+return 0;
+
+}
+
+public static Tree popHeap(List<Tree> heapList){
+
+Tree tempTree=null;
+
+if(heapList!=null&&heapList.size()>0){
+
+tempTree=heapList.get(0);
+
+heapList.remove(tempTree);
+
+}
+
+return tempTree;
+
+}
+
+}

@@ -1,0 +1,414 @@
+<%@page language="java" contentType="text/html;charset=UTF-8" %><%@ include file="/common/taglibs.jsp"%>
+<%
+	String id = request.getParameter("id");
+	String action = "transfer";
+	String title = "查询";
+	String url = action+"?t="+Utils.getSystemMillis();
+	String stime = request.getParameter("stime");
+	String etime = request.getParameter("etime"); 
+	if(Utils.isNull(stime)||Utils.isNull(etime)){
+		stime = Utils.getAddDate(Utils.getNowDate(),-1)+" 00:00";
+		etime = Utils.getNowDate()+" 23:59";
+	}
+	String orderCode = request.getParameter("orderCode");
+	if(Utils.isNull(orderCode)){
+		orderCode = "";
+	}
+	String pnr = request.getParameter("pnr");
+	if(Utils.isNull(pnr)){
+		pnr = "";
+	}
+	 
+	String type = request.getParameter("type");
+	if(Utils.isNull(type)){
+		type = Config.ORDER_TYPE_ALL+"";
+	}
+	
+	String state = request.getParameter("state");
+	if(Utils.isNull(state)){
+		state = Config.ORDER_TYPE_ALL+"";
+	}
+ 
+	String clientid = request.getParameter("clientid");
+	if(Utils.isNull(clientid)){
+		clientid = "";
+	}
+	String name = request.getParameter("name");
+	if(Utils.isNull(name)){
+		name = "";
+	}
+	String phone = request.getParameter("phone");
+	if(Utils.isNull(phone)){
+		phone = "";
+	}
+	String qq = request.getParameter("qq");
+	if(Utils.isNull(qq)){
+		qq = "";
+	}
+	String usertype = (String)session.getAttribute(Config.USER_TYPE);
+	int utype = 1;
+	if(usertype!=null)
+		utype = Integer.valueOf(usertype);
+	String term = "query.stime="+stime+"&query.etime="+etime+"&order.orderid="+
+	orderCode+"&order.pnr="+pnr+"&customer.customerID="+clientid+"&customer.qq="+
+	qq+"&customer.name="+name+"&transfer.transferState="+state+"&customer.phone="+phone+"&order.type="+type;
+	String editJsp = jspName.replace("list","info");
+%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title></title>    
+	<link href="../ui/lib/ligerUI/skins/Aqua/css/ligerui-all.css" rel="stylesheet" type="text/css" />
+	<link href="../ui/lib/ligerUI/skins/Gray/css/dialog.css" rel="stylesheet" type="text/css" />
+	<script src="../ui/lib/jquery/jquery-1.3.2.min.js" type="text/javascript"></script>   
+    <script src="../ui/lib/ligerUI/js/core/base.js" type="text/javascript"></script>
+    <script src="../ui/lib/ligerUI/js/ligerui.all.min.js" type="text/javascript"></script> 
+    <link href="../ui/lib/ligerUI/skins/ligerui-icons.css" rel="stylesheet" type="text/css" />
+    
+	<script src="../ui/helper.js" type="text/javascript"></script> 
+	<script type="text/javascript">
+    var grid=null; 
+    var datas;
+    $(function () { 
+			$("#stime").ligerDateEditor({ showTime: true,initValue:'<%=stime%>'});
+        	$("#etime").ligerDateEditor({ showTime: true,initValue:'<%=etime%>'}); 
+        	$("#type").ligerComboBox({
+                data: [
+				{ id: <%=Config.ORDER_TYPE_ALL%>, text: '全部' },
+                { id: <%=Config.ORDER_TYPE_ORDER%>, text: '订票' },
+             	{ id: <%=Config.ORDER_TYPE_CANCEL%>, text: '退票' }
+                ], valueFieldID: 'type0'
+            });
+ 			$("#type").ligerGetComboBoxManager().setValue(<%=type%>);
+ 			$("#auditType").ligerComboBox({
+                data: [
+	                { id: <%=Config.STATE_AUDIT_SUC%>, text: '审核通过' },
+	                { id: <%=Config.STATE_AUDIT_FAIL%>, text: '审核不通过' }
+                ], valueFieldID: 'type1'
+            });
+        	$("#auditType").ligerGetComboBoxManager().setValue(<%=Config.STATE_AUDIT_SUC%>);
+        	$("#state").ligerComboBox({
+                data: [
+                	{ id: <%=Config.ORDER_TYPE_ALL%>, text: '全部' },
+                	{ id: <%=Config.STATE_NEW%>, text: '新建' },
+                	{ id: <%=Config.STATE_AUDIT_ING%>, text: '审核中' },
+	                { id: <%=Config.STATE_AUDIT_SUC%>, text: '审核通过' },
+	                { id: <%=Config.STATE_AUDIT_FAIL%>, text: '审核不通过' },
+	                { id: <%=Config.STATE_AUDIT_END%>, text: '审核结束' }
+                ], valueFieldID: 'type2'
+            });
+        	$("#state").ligerGetComboBoxManager().setValue(<%=Config.ORDER_TYPE_ALL%>);
+	  		$("form").ligerForm();
+	  		var url1 = '<%=url%>&<%=term%>';
+	  		myGrid= $("#grids").ligerGrid({
+        		 checkbox: false,
+                 columns:[	{ display: '编号', name: 'transferId', width: 150, type: 'int' },
+                             { display: '客户编码', name: 'customerId' },
+                             { display: '状态', name: 'transferState',render: function (rowdata, rowindex){
+                            	if(rowdata.transferState=='0'){
+                            		return '新建';
+                            	}else if(rowdata.transferState=='1'){
+                            		return '审核中';
+                            	}else if(rowdata.transferState=='2'){
+                            		return '审核通过';
+                            	}else if(rowdata.transferState=='3'){
+                            		return '审核不通过';
+                            	}else if(rowdata.transferState=='4'){
+                            		return '完成';
+                            	}
+                             }},
+                             { display: '转账账号', name: 'transferAccount', width: 150 },
+                             { display: '转账金额', name: 'transferAmount', width: 120,type:'float' },
+                             { display: '说明', name: 'remark', width: 150 },
+                             { display: '创建人', name: 'userName' },
+                             { display: '创建时间', name: 'createTime' },
+                             //{ display: '添加时间', name: 'createDate' ,width: 150,type:'date',render: function (item){
+                            	//return new Date( item.createDate).pattern("yyyy-MM-dd HH:mm:ss");
+                             //} },
+                             { display: '最后操作人', name: 'luserName' },
+                             { display: '最后操作时间', name: 'updateTime' }
+                             ], 
+                             isScroll: true, showToggleColBtn: false, width: '100%',
+                             height:'98%',
+                             url: url1,
+                 			 showTitle: false, columnWidth: 100  , frozen:false,
+                 			toolbar: { items: [{ text: '开始时间：<%=stime%>'},{ line:true },
+				          					   { text: '结束时间：<%=etime%>'},{ line:true },
+				          					   { text: '自定义查询',click:f_inputQuery, icon: 'search2'},{ line:true },
+                 							   { text: '添加',click:f_addTransfer, icon: 'plus',id : 'add'},{ line:true },
+					                           { text: '修改',click:f_editTransfer, icon: 'edit',id : 'edit'},{ line:true },
+					                           { text: '提交',click:f_submitTransfer, icon: 'edit',id : 'submit'},{ line:true },
+					                           { text: '审核',click:f_auditTransfer, icon: 'edit',id : 'audit'},{ line:true },
+					                           { text: '删除',click:f_delTransfer, icon: 'delete',id : 'del'},{ line:true },
+                                               { text: '导出Excel', id : 'orderSumbit' ,click: downloadThis, icon: 'add' ,icon: 'save' }
+                                               ]
+                                               },
+                                               onSelectRow: function (data, rowindex, rowobj)
+                                               {
+                                            		showButton(data);
+                                               },onDblClickRow : f_onSelectRow, totalRender: f_totalRender
+         
+             });
+            showButton();
+    });
+	
+	function f_totalRender(data, currentPageData)
+        {
+            return data.totalRender; 
+        }
+	
+	
+	function submitThis(){
+		form1.action = "<%=jspName%>"; 
+		form1.submit();
+	}
+	
+	function showButton(row){
+			var toolManager = myGrid.toolbarManager;
+            var utype = '<%=utype%>';
+            if(utype=='3'){
+        		toolManager.setDisabled('audit');
+            	if(row!=null){
+	        		if(row.transferState!='0'){
+	           			toolManager.setDisabled('del');
+	        		}
+	        		if(row.transferState=='1'){
+	           			toolManager.setDisabled('submit');
+	           			toolManager.setDisabled('edit');
+	           		}
+           		}
+            }else{
+            	if(row!=null){
+            		if(row.transferState=='0'){
+            			toolManager.setDisabled('audit');
+            		}
+            		if(row.transferState=='1'){
+            			toolManager.setEnabled('audit');
+            			toolManager.setDisabled('submit');
+            			toolManager.setDisabled('edit');
+            		}
+            		if(row.transferState=='2'||row.transferState=='3'){
+            			toolManager.setDisabled('audit');
+            			toolManager.setDisabled('submit');
+            			toolManager.setDisabled('edit');
+            		}
+            	}
+            	
+            }
+    }
+	
+	function f_onSelectRow(data, rowindex, rowobj){
+ 		form1.action = "transfer?action=view&transfer.transferId="+data.transferId;
+		form1.submit();
+ 	}
+	
+	function f_submitTransfer(){
+		var row = myGrid.getSelectedRow();
+    	if(!row){
+         	$.ligerDialog.warn("请选择一条转账单！");
+         	return;
+        }
+    	if(confirm("确定要提交选中的记录吗？")){
+    		var url2="transfer?action=audit&transfer.transferState=1&transfer.transferId="+row.transferId+"";
+	   	    $.getJSON(url2,function(json){
+			  	myGrid.set({ data: json }); 
+            	showButton();
+            })
+    	}
+    	
+	}
+	
+ 	function downloadThis(){
+		form1.action = "../common/download.jsp?name=<%=jspName%>"; 
+		form1.fb.value = getDatasValue(datas);	
+		form1.submit();
+	}
+ 	
+ 	function f_onSelectRow(data, rowindex, rowobj){
+ 		var qurl = "<%=action%>?action=view&transfer.transferId="+data.transferId+"";
+		$.ligerDialog.open({ title:'查看',name:'wins',url: qurl,height: 420,width: 700,isResize: true,showMax:true, 
+			buttons: [ { text: '确定', onclick: function (item, dialog) { dialog.hide(); } } ] });
+ 	}
+ 	
+ 	function f_inputQuery(){
+		$.ligerDialog.open({ target: $("#target1"),title:'<%=title%>',height: 300,width: 500,isResize: true,showMax:true, 
+			buttons: [
+			{ text: '清空', 
+			onclick: function (item, dialog) {
+				//$("#stime").val("");
+				//$("#etime").val("");
+				$("#orderCode").val("");
+				$("#pnr").val("");
+				$("#clientid").val("");
+				$("#name").val("");
+				$("#phone").val("");
+				$("#qq").val("");
+ 				$("#type").ligerGetComboBoxManager().setValue(<%=Config.ORDER_TYPE_ALL%>);
+ 				$("#state").ligerGetComboBoxManager().setValue(<%=Config.ORDER_TYPE_ALL%>);
+			} },
+			{ text: '确定', 
+				onclick: function (item, dialog) {
+					var url = '<%=jspName%>?stime='+ $("#stime").val()
+					 	+'&etime='+$("#etime").val()+'&orderCode='+ $("#orderCode").val()+'&pnr='+ $("#pnr").val()+'&clientid='+ $("#clientid").val()+'&state='+ $("#type2").val()+'&name='+ $("#name").val()+'&phone='+ $("#phone").val()+'&qq='+ $("#qq").val()+'&type='+ $("#type0").val();
+					
+					 location.href = url;
+				} },
+			{ text: '取消', onclick: function (item, dialog) { dialog.hide(); } } ] });
+    }
+	
+	 function f_onCheckAllRow(checked)
+        {	 
+            for (var rowid in this.records)
+            {
+                if(checked)
+                    addCheckedOrderOffset(this.records[rowid]);
+                else
+                    removeCheckedOrderOffset(this.records[rowid]);
+            }
+        }
+ 
+        var checkedOrderOffset = [];
+        function findCheckedOrderOffset(obj)
+        {
+            for(var i =0;i<checkedOrderOffset.length;i++)
+            {
+                if(checkedOrderOffset[i] == obj) return i;
+            }
+            return -1;
+        }
+        function addCheckedOrderOffset(obj)
+        {
+            if(findCheckedOrderOffset(obj) == -1)
+                checkedOrderOffset.push(obj);
+        }
+        function removeCheckedOrderOffset(obj)
+        {
+            var i = findCheckedOrderOffset(obj);
+            if(i==-1) return;
+            checkedOrderOffset.splice(i,1);
+        }
+        function f_isChecked(rowdata)
+        {
+            if (findCheckedOrderOffset(rowdata) == -1)
+                return false;
+            return true;
+        }
+        function f_onCheckRow(checked, data)
+        {
+            if (checked) addCheckedOrderOffset(data);
+            else removeCheckedOrderOffset(data);
+        }
+        function f_getChecked()
+        {
+            alert(checkedOrderOffset.join(','));
+        }
+        function f_addTransfer(){
+				location.href = "<%=editJsp%>?action=add" ;  
+	    }
+		function f_editTransfer(){
+			var row = myGrid.getSelectedRow();
+	    	if(!row){
+	         	$.ligerDialog.warn("请选择一条转账单！");
+	         	return;
+	        }
+			form1.action = "<%=action%>?action=display&transfer.transferId="+row.transferId+"";
+			form1.submit();   
+        }
+		
+		function f_auditTransfer(){
+			var row = myGrid.getSelectedRow();
+	    	if(!row){
+	         	$.ligerDialog.warn("请选择一条转账单！");
+	         	return;
+	        }
+	    	$.ligerDialog.open({ target: $("#target2"),title:'审核',height: 120,width: 250,isResize: true,showMax:true, 
+			buttons: [
+				{ text: '确定', 
+				onclick: function (item, dialog) {
+					var state = $("#type1").val();
+					var remark = $("#remark").val();
+	    			var url2="transfer?action=audit&transfer.transferAmount="+row.transferAmount+"&transfer.transferState="+state+"&transfer.customerId="+row.customerId+"&transfer.transferId="+row.transferId+"";
+					$.getJSON(url2,function(json){
+						myGrid.set({ data: json });
+            			showButton();
+             		});
+					dialog.hide();
+				} },
+			{ text: '取消', onclick: function (item, dialog) { dialog.hide(); } } ] });
+		}
+
+       	function f_inputOrderOffset(){
+       		 $.ligerDialog.prompt('请输入用户ID,不输入则查询全部','', function (yes, value)
+             {
+                      	if (yes){
+                         	f_findUser(value);
+                        }
+             });
+       	}
+        
+        function f_delTransfer()
+        {
+        	var row = myGrid.getSelectedRow();
+	    	if(!row){
+	         	$.ligerDialog.warn("请选择一条转账单！");
+	         	return;
+	        }
+        	
+			if(confirm('确定要删除选中的记录吗？')){
+             	form1.action = "<%=action%>?action=delete&transfer.transferId="+row.transferId+"";
+				form1.submit();   
+            }
+        }
+</script>
+	 
+</head>
+<body style="padding:0 2px 2px 2px;overflow:hidden;" >
+<form name="form1" method="post" id="form1">
+<textarea name="fb"  style="display:none" ></textarea> 
+</form> 
+<div >
+<div id='grids' ></div></div>
+<div id="target1" style="display:none" >
+  <table height="72" cellpadding="0" cellspacing="0" class="l-table-edit" >
+    <tr>
+  	  	<td width="59"   align="right" class="l-table-edit-td">开始时间:</td>
+    	<td width="128"   align="left" class="l-table-edit-td"><input type="text" id="stime" name="stime" /></td>
+    	<td colspan="2" align="right" class="l-table-edit-td">结束时间:</td>
+  	  	<td width="201"  colspan="2" align="left" class="l-table-edit-td"><input type="text" id="etime" name="etime" /></td>
+	</tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">订单号:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="orderCode" name="orderCode" value="<%=orderCode%>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">订单类型:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input name="type" type="text" id="type" ltype="text"  value="" /></td>
+    </tr> 
+    <tr>
+      <td align="right" class="l-table-edit-td">转账单状态:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="state" name="state" value="" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">PNR:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="pnr" name="pnr" value="<%=pnr%>" /></td>
+    </tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">客户编码:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="clientid" name="clientid" value="<%=clientid%>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">客户名称:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="name" name="name" value="<%=name %>" /></td>
+    </tr>
+    <tr>
+      <td align="right" class="l-table-edit-td">手机:</td>
+      <td align="left" class="l-table-edit-td"><input type="text" id="phone" name="phone" value="<%=phone %>" /></td>
+      <td colspan="2" align="right" class="l-table-edit-td">QQ:</td>
+      <td colspan="2" align="left" class="l-table-edit-td"><input type="text" id="qq" name="qq" value="<%=qq %>" /></td>
+    </tr>
+</table> 
+</div>
+<div id="target2" style="display:none" >
+  <table height="72" cellpadding="0" cellspacing="0" class="l-table-edit" >
+    <tr>
+  	  	<td align="right" class="l-table-edit-td">审核操作:</td>
+      	<td align="left" class="l-table-edit-td"><input name="auditType" type="text" id="auditType" ltype="text"  value="" /></td>
+    </tr>
+</table> 
+</div>
+</body>
+</html>

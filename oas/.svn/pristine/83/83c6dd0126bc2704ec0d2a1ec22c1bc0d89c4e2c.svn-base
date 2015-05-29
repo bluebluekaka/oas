@@ -1,0 +1,15 @@
+package test;
+
+import com.oas.common.Utils;
+
+public class Test {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		System.out.println(Utils.getAddDate("2013-12-01", -1));
+	}
+
+}

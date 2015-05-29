@@ -1,0 +1,65 @@
+package com.oas.objects;
+
+public class OrderOffset extends BaseOrder{
+
+	private Long orderOffsetCode;
+	
+	private String orderOffsetCodes;
+	
+	private Float returnAmount;
+	
+	private String offsetOrders;
+	
+	private Float allOffsetAmount; 
+	
+	private Float balance;
+
+	public Long getOrderOffsetCode() {
+		return orderOffsetCode;
+	}
+
+	public void setOrderOffsetCode(Long orderOffsetCode) {
+		this.orderOffsetCode = orderOffsetCode;
+	}
+
+	public String getOrderOffsetCodes() {
+		return orderOffsetCodes;
+	}
+
+	public void setOrderOffsetCodes(String orderOffsetCodes) {
+		this.orderOffsetCodes = orderOffsetCodes;
+	}
+
+	public Float getReturnAmount() {
+		return returnAmount;
+	}
+
+	public void setReturnAmount(Float returnAmount) {
+		this.returnAmount = returnAmount;
+	}
+
+	public String getOffsetOrders() {
+		return offsetOrders;
+	}
+
+	public void setOffsetOrders(String offsetOrders) {
+		this.offsetOrders = offsetOrders;
+	}
+
+	public Float getAllOffsetAmount() {
+		return allOffsetAmount;
+	}
+
+	public void setAllOffsetAmount(Float allOffsetAmount) {
+		this.allOffsetAmount = allOffsetAmount;
+	}
+
+	public Float getBalance() {
+		return balance;
+	}
+
+	public void setBalance(Float balance) {
+		this.balance = balance;
+	}
+	
+}
